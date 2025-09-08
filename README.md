@@ -1,5 +1,5 @@
 # CoW Centerline and Feature Extraction
-This repository provides a baseline algorithm for a full quantitative description of the Circle of Willis (CoW). It takes as input a multiclass segmentation mask (as provided by the TopCoW challenge) and outputs a centerline and surface mesh, along with derived data including the CoW variant, anatomically relevant nodes, and a rich set of morphometric features.
+This repository provides a baseline algorithm for a full quantitative description of the Circle of Willis (CoW). It takes as input a multiclass segmentation mask (as provided by the TopCoW challenge) and outputs a centerline graph and surface mesh, along with derived data including the CoW variant, anatomically relevant nodes, and a rich set of morphometric features.
 
 If you use this algorithm, please cite:
 [Placeholder for arXiv citation]
@@ -12,17 +12,17 @@ We also provide a public centerline dataset built upon the TopCoW training set:
 </p>
 
 ## Background
-The CoW is an important arterial system in the brain. Due to its central role, it is believed to be involved in various cerebrovascular pathologies such as stroke and aneurysm. The CoW exhibits significant inter-individual variability, both in terms of anatomical variants (e.g., hypoplastic or missing segments) and morphometric feature ranges. This variability makes a comprehensive analysis of the CoW tedious and challenging, highlighting the need for automated tools.
+The CoW is an important arterial system in the brain. Due to its central role in cerebral blood flow, it is believed to be involved in various cerebrovascular pathologies such as stroke and aneurysm. The CoW also exhibits significant inter-individual variability—both in terms of anatomical variants (e.g., hypoplastic or missing segments) and morphometric feature ranges—which further complicates its clinical assessment. This variability makes a comprehensive analysis of the CoW tedious and challenging, highlighting the need for automated tools.
 
 ### TopCoW
-Voxel-level segmentation and anatomical annotation are key steps toward automated CoW analysis. To support this, we organized the challenge ["topology-aware anatomical segmentation of the Circle of Willis for CTA and MRA" (TopCoW) in 2023 and 2024](https://arxiv.org/abs/2312.17670). The TopCoW dataset includes paired CTA and MRA scans of 200 patients, with voxel-level annotations for 13 artery segments.
+Voxel-level segmentation and anatomical annotation are key steps toward automated CoW analysis. To support this, we organized the challenge ["topology-aware anatomical segmentation of the Circle of Willis for CTA and MRA" (TopCoW)](https://arxiv.org/abs/2312.17670) in 2023 and 2024. The TopCoW dataset includes paired CTA and MRA scans of 200 stroke patients, with voxel-level annotations for 13 artery segments.
 
 Both the [TopCoW training set](https://zenodo.org/records/15692630) and the [TopCoW best performing models](https://zenodo.org/records/15665435) are publicly available on Zenodo. The models can be used to segment the CoW in CTA and MRA images. Their output serves as input for our centerline and feature extraction pipeline.
 
 ### Centerline Extraction Algorithm
 A full quantitative description of the CoW requires a centerline representation of the vasculature. However, extracting centerlines from segmentation masks is challenging, as conventional skeletonization algorithms often struggle with complex vascular geometries. One solution is to treat skeletonization as a segmentation task, leveraging the power of the U-Net architecture.
 
-This repository provides an end-to-end pipeline that generates labeled centerline graphs directly from TopCoW multiclass masks. The algorithm combines the [nnUNet framework](https://github.com/MIC-DKFZ/nnUNet) for binary skeletonization and the A* algorithm for skeleton connection. This approach enables anatomically accurate centerline graphs and reliable extraction of morphometric features.
+This repository provides an end-to-end pipeline that generates labeled centerline graphs directly from TopCoW multiclass masks. The algorithm combines the [nnUNet framework](https://github.com/MIC-DKFZ/nnUNet) for binary skeletonization and the A* algorithm for skeleton connection. This approach enables the extraction of anatomically accurate centerline graphs and reliable morphometric features.
 
 ### Centerline Dataset
 Our baseline algorithm was developed and validated using a curated centerline dataset created with the [Voreen graph generation tool](https://github.com/jqmcginnis/voreen_tools). The dataset is based on the TopCoW segmentation masks and was post-processed and verified to ensure anatomical correctness of the centerline graphs.
@@ -48,7 +48,8 @@ sudo apt install -y g++ cmake libboost-all-dev libglew-dev libqt5svg5-dev libdev
 ```
 
 #### Build VTK
-You need to build VTK as a prerequisite. **NOTE:** You might want to change directories (~/projects) in the command chain below!
+You need to build VTK as a prerequisite for the Voreen tool.   
+**NOTE:** You might want to change directories (~/projects) in the commands below!
 ``` wget https://www.vtk.org/files/release/9.2/VTK-9.2.6.tar.gz
 mkdir ~/projects
 tar -xf VTK-9.2.6.tar.gz -C  ~/projects
@@ -59,7 +60,8 @@ cd  ~/projects/vtk && make -j 8
 ```
 
 #### Build Voreen
-Building the Voreen tool with certain settings enabled in the cmake file. **NOTE:** You might want to change directories (~/projects) in the command below!
+Build the Voreen tool with certain settings enabled in the cmake file.   
+**NOTE:** You might want to change directories (~/projects) in the commands below!
 ```
 wget https://github.com/jqmcginnis/voreen_tools/raw/main/binaries/voreen-src-unix-nightly.tar.gz
 tar -xf voreen-src-unix-nightly.tar.gz -C ~/projects
@@ -84,7 +86,7 @@ install the latest version with support for your hardware (cuda, mps, cpu).
 cd predict_skeleton/nnUNet
 pip install -e .
 ```
-#### Install other dependencies
+#### Install remaining dependencies
 Run the following command from the project root:
 ```bash
 pip install -r requirements.txt
@@ -93,7 +95,7 @@ pip install -r requirements.txt
 ## Usage
 The pipeline runs on TopCoW multiclass masks, which can be produced by running one of the [publicly available models](https://zenodo.org/records/15665435) on CTA and/or MRA data. 
 
-**Input**
+**Pipeline Input**
 - Multiclass segmentation mask (.nii.gz): A mask with 13 labeled artery segments, as defined by the TopCoW challenge.
 
 **Pipeline steps**
@@ -105,7 +107,7 @@ The pipeline runs on TopCoW multiclass masks, which can be produced by running o
 6) **Compute radius:** Perform cross-sectional analysis along the centerline to compute MIS and CE radius for each edge.
 7) **Extract features:** Compute a set of segment and bifurcation features, including fetal PCA status.
 
-**Output**
+**Pipeline Output**
 - Centerline graph (.vtp): Labeled centerline representation of the CoW
 - Surface mesh (.vtp): Labeled surface mesh of the segmented vasculature
 - Variant file (.json): Encodes the anatomical CoW variant
@@ -125,7 +127,7 @@ Additionally, you must specify the image modality ('ct' or 'mr') and a set of pi
 ### Model weights
 The model weights for skeletonization are available for download on Zenodo: [Insert Zenodo link here]
 
-Download the weights and place them in the folder defined by nnunet_results, using the same relative path structure as specified on Zenodo.
+Download the weights and place them in the folder defined by *nnunet_results*, using the same relative path structure as specified on Zenodo.
 
 ### Run the pipeline
 Provide at least one multiclass mask in the folder specified by *cow_mlt_seg_dir*, and ensure the model weights are correctly placed. Once everything is set up, simply run the main script without any arguments:
