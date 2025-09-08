@@ -8,7 +8,7 @@ We also provide a public centerline dataset built upon the TopCoW training set:
 [Placeholder for Zenodo link]
 
 <p align="center">
-  <img src="https://github.com/fmusio/TopCoWSubmissions/blob/main/cnt_pipeline.png" width="500" />
+  <img src="https://github.com/fmusio/CoW_Centerline_Extraction/blob/main/figure_example_cnt.png" width="500" />
 </p>
 
 ## Background
