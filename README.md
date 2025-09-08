@@ -95,7 +95,7 @@ pip install -r requirements.txt
 ## Usage
 The pipeline runs on TopCoW multiclass masks, which can be produced by running one of the [publicly available models](https://zenodo.org/records/15665435) on CTA and/or MRA data. 
 
-**Pipeline Input**
+**Pipeline input**
 - Multiclass segmentation mask (.nii.gz): A mask with 13 labeled artery segments, as defined by the TopCoW challenge.
 
 **Pipeline steps**
@@ -107,7 +107,7 @@ The pipeline runs on TopCoW multiclass masks, which can be produced by running o
 6) **Compute radius:** Perform cross-sectional analysis along the centerline to compute MIS and CE radius for each edge.
 7) **Extract features:** Compute a set of segment and bifurcation features, including fetal PCA status.
 
-**Pipeline Output**
+**Pipeline output**
 - Centerline graph (.vtp): Labeled centerline representation of the CoW
 - Surface mesh (.vtp): Labeled surface mesh of the segmented vasculature
 - Variant file (.json): Encodes the anatomical CoW variant
