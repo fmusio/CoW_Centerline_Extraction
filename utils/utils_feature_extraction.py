@@ -227,7 +227,7 @@ def compute_geometry_along_path(polydata, path, radius_attribute='avg_radius', f
     volume (float): Volume of the segment
     torsion (tuple): Mean, std, median, min, max of torsion
     """
-    avg_radius = polydata.GetCellData().GetArray(radius_attribute)
+    radius = polydata.GetCellData().GetArray(radius_attribute)
 
     cellIds_path = []
     for edge in path:
@@ -235,12 +235,12 @@ def compute_geometry_along_path(polydata, path, radius_attribute='avg_radius', f
     
     point_coords = get_point_coords_along_path(path, polydata)
         
-    avg_radii = []
+    radii = []
     for id in cellIds_path:
-        avg_radii.append(avg_radius.GetValue(id))
+        radii.append(radius.GetValue(id))
 
     # TODO: treat NaN values
-    volume = compute_volume(point_coords, avg_radii)
+    volume = compute_volume(point_coords, radii)
 
     # Work with parametrized curve
     curve = return_curve(point_coords, factor_num_points, smooth, plot)
