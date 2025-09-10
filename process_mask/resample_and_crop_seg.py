@@ -324,7 +324,7 @@ def run_cropping_and_resampling(cow_seg_filepath: str, save_dir: str, correct_ma
     nii_array = resampled_mask.get_fdata().astype(np.uint8)
 
     # if correc_mask is true, mask will be corrected by:
-    #   - Connecting disconnected segments
+    #   - Connecting disconnected segments of the same label if they are within a certain max path length
     if correct_mask and max_path_length is not None:
         logger.info(f'Checking mask segments for more than one component after resampling...')
         unique_labels, counts = np.unique(nii_array, return_counts=True)
