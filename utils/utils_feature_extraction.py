@@ -181,7 +181,7 @@ def compute_radius_along_path(polydata, path, radius_attribute='ce_radius', nan_
     Returns:
     mean, std, median, min, max (float): Statistics of the radius along the path
     """
-    avg_radius = polydata.GetCellData().GetArray(radius_attribute)
+    radius = polydata.GetCellData().GetArray(radius_attribute)
 
     _, cell_ids_cow = get_edge_list(polydata)
 
@@ -190,19 +190,19 @@ def compute_radius_along_path(polydata, path, radius_attribute='ce_radius', nan_
         cellIds_path.append(get_cellId_for_edge(edge, polydata))
     
     nan_edges = 0
-    avg_radii = []
+    radii = []
     for id in cellIds_path:
         assert cell_ids_cow[id] == id, "Cell ID does not match!"
-        avg_radii.append(avg_radius.GetValue(id))
-        if np.isnan(avg_radius.GetValue(id)):
+        radii.append(radius.GetValue(id))
+        if np.isnan(radius.GetValue(id)):
             nan_edges += 1
 
-    if nan_edges/len(avg_radii) < nan_threshold:
-        mean, std, median, min, q1, q3, max = compute_statistics(avg_radii, treat_nan='ignore')
+    if nan_edges/len(radii) < nan_threshold:
+        mean, std, median, min, q1, q3, max = compute_statistics(radii, treat_nan='ignore')
     else:
         logger.warning(f'\tALERT: more than {nan_threshold*100}% NaN values in radius along path!')
-        mean, std, median, min, q1, q3, max = compute_statistics(avg_radii, treat_nan='none')
-    
+        mean, std, median, min, q1, q3, max = compute_statistics(radii, treat_nan='none')
+
     return (mean, std, median, min, q1, q3, max), nan_edges
 
 def compute_geometry_along_path(polydata, path, radius_attribute='avg_radius', factor_num_points=2, 
