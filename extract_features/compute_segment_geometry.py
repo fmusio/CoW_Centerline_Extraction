@@ -224,14 +224,16 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
             geometry_dict[segment_name] = list_geom_dicts
     
     # remove A1 entry if A1 blocked (not touching ICA) and segment shorter than half the median_a1 length
+    # NOTE: This threshold might be changed
+    threshold_a1 = 0.5 * median_a1
     if not variant_dict['anterior']['R-A1']:
         if 'Acom bifurcation' in nodes_dict['11'] and 'ICA boundary' in nodes_dict['11']:
-            if 'R-A1' in geometry_dict and geometry_dict['R-A1'][0]['length'] < 0.5 * median_a1:
+            if 'R-A1' in geometry_dict and geometry_dict['R-A1'][0]['length'] < threshold_a1:
                 logger.warning(f'\tALERT: Removing R-A1 entry from feature dict!')
                 geometry_dict.pop('R-A1')
     if not variant_dict['anterior']['L-A1']:
         if 'Acom bifurcation' in nodes_dict['12'] and 'ICA boundary' in nodes_dict['12']:
-            if 'L-A1' in geometry_dict and geometry_dict['L-A1'][0]['length'] < 0.5 * median_a1:
+            if 'L-A1' in geometry_dict and geometry_dict['L-A1'][0]['length'] < threshold_a1:
                 logger.warning(f'\tALERT: Removing L-A1 entry from feature dict!')
                 geometry_dict.pop('L-A1')
     
