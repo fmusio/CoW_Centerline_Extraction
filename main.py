@@ -365,15 +365,6 @@ if __name__ == "__main__":
                  )
 
     ###### Catching errors ########'
-    # from datetime import datetime
-    # logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
-    # error_log_file = os.path.join(logs_dir, f'errors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
-
-    # # Create and initialize the error log file
-    # with open(error_log_file, "w") as error_file:
-    #     error_file.write(f"Error log created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-    #     error_file.write("="*50 + "\n\n")
-
     # setup error logger
     error_logger.error(f"Error log created at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     error_logger.error("="*50 + "\n")
@@ -395,17 +386,6 @@ if __name__ == "__main__":
             
             # append id to list of errors
             list_of_errors.append(cow_seg_input)
-
-    ###### Not catching errors ######
-    # for n, cow_seg_input in enumerate(cow_seg_files):
-    #     runtime = run_pipeline_for_single_case(cow_seg_input)
-    #     list_runtimes.append(runtime)
-    
-    # logger.info(f'\nDone with all cases')
-    # mean_runtime = np.mean(list_runtimes)
-    # std_runtime = np.std(list_runtimes)
-    # logger.info(f'Mean runtime: {mean_runtime:.3f} seconds')
-    # logger.info(f'Standard deviation of runtimes: {std_runtime:.3f} seconds')
 
     logger.info(f'\nDone with all cases')
     logger.info(f'Errors occurred in the following cases:')
