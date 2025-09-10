@@ -372,8 +372,7 @@ if __name__ == "__main__":
     # Loop through input files
     for cow_seg_input in cow_seg_files:
         try:
-            # runtime = run_pipeline_for_single_case(cow_seg_input)
-            runtime = 5
+            runtime = run_pipeline_for_single_case(cow_seg_input)
             list_runtimes.append(runtime)
         except Exception as e:
             error_msg = f"Error processing {cow_seg_input}: {e}"
