@@ -262,7 +262,7 @@ def extract_segments(nodes_dict, variant_dict, polydata):
             # case blocked A1
             elif 'ICA boundary' in RACA_dict:
                 assert 'ICA bifurcation' not in RICA_dict, 'R-A1 blocked but ICA bifurcation present?!'
-                segments['R-ACA'] = [(RICA_dict['ICA boundary'][0]['id'], ra2_end, [4, 11])]
+                segments['R-ACA'] = [(RACA_dict['ICA boundary'][0]['id'], ra2_end, [11])]
             else:
                 segments['Acom'] = [(LACA_dict['Acom bifurcation'][0]['id'], ra2_end, [10, 11, 12])]
         # Add remaining segments after branching point

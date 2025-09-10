@@ -163,14 +163,22 @@ def extract_segments(nodes_dict, variant_dict):
         RACA_dict = nodes_dict['11']
         RA2_end = RACA_dict['ACA end'][0]['id']
         if 'ICA boundary' in RACA_dict:
-            assert anterior_top['R-A1']
-            RACA_start = RACA_dict['ICA boundary'][0]['id']
-            if 'Acom bifurcation' in RACA_dict:
+            if anterior_top['R-A1']:
+                RACA_start = RACA_dict['ICA boundary'][0]['id']
+                if 'Acom bifurcation' in RACA_dict:
+                    RA1_end = RACA_dict['Acom bifurcation'][0]['id']
+                    assert anterior_top['Acom']
+                    segments['R-A1'] = [(RACA_start, RA1_end, 11)]
+                    segments['R-A2'] = [(RA1_end, RA2_end, 11)]
+                segments['R-ACA'] = [(RACA_start, RA2_end, 11)]
+            else: # blocked A1!
+                assert anterior_top['Acom'], 'A1 blocked but no Acom?!'
+                assert 'Acom bifurcation' in RACA_dict, 'A1 blocked but no Acom?!'
+                RACA_start = RACA_dict['ICA boundary'][0]['id']
                 RA1_end = RACA_dict['Acom bifurcation'][0]['id']
-                assert anterior_top['Acom']
                 segments['R-A1'] = [(RACA_start, RA1_end, 11)]
                 segments['R-A2'] = [(RA1_end, RA2_end, 11)]
-            segments['R-ACA'] = [(RACA_start, RA2_end, 11)]
+                segments['R-ACA'] = [(RACA_start, RA2_end, 11)]
         else:
             assert anterior_top['R-A1'] == False
             assert 'Acom boundary' in RACA_dict
