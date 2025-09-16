@@ -33,9 +33,8 @@ from configs import crop_and_resample_mlt_mask, do_nnunet_prediction, connect_sk
 from configs import postprocess_graph, compute_radius_along_graph, extract_features
 
 # import pipeline parameters
-# from configs import buffer, spacing
 from configs import do_mask_corrections, min_overall_segment_size, threshold_for_component_removal, max_path_length_mask
-from configs import max_path_length, n_jobs
+from configs import max_path_length, remove_floating_segments, n_jobs
 from configs import radius_attribute, median_p1, median_a1, median_c7, margin_from_cow
 from configs import dist_angle, nr_pts_angle_average, nr_edges_rad_avg, fixed_dist_radius
 from configs import fetal_percentile, fetal_factor
@@ -45,7 +44,7 @@ from configs import fetal_percentile, fetal_factor
 work_dir = os.path.dirname(os.path.abspath(__file__))  # Gets the directory where this main.py file is located
 
 # folder where all the algorithm outputs are stored
-media_dir = os.path.join(work_dir, 'media') 
+media_dir = os.path.join(work_dir, 'media/topcow_preds/UZH/') 
 if not os.path.exists(media_dir):
     os.makedirs(media_dir)
 
@@ -154,14 +153,14 @@ def run_pipeline_for_single_case(cow_seg_filename):
 
         # 2: Run nnUNet prediction
         elif step == 'nnUNet prediction':
+            logger.info('\nRunning nnUNet prediction...')
             if os.path.exists(os.path.join(mlt_mask_dir, connected_maskname)):
-                logger.info(f'\nUsing resampled and CONNECTED mlt mask {connected_maskname} for skeleton prediction...')
+                logger.info(f'Using resampled and CONNECTED mlt mask {connected_maskname} for skeleton prediction...')
                 mlt_mask_filepath_for_skel_pred = os.path.join(mlt_mask_dir, connected_maskname)
             else:
-                logger.info(f'\nUsing resampled mlt mask {mlt_mask_filepath} for skeleton prediction...')
+                logger.info(f'Using resampled mlt mask {mlt_mask_filepath} for skeleton prediction...')
                 mlt_mask_filepath_for_skel_pred = mlt_mask_filepath
             
-            logger.info('\nRunning nnUNet prediction...')
             skeleton_filepath = nnunet_predict_skeleton(mlt_mask_filepath_for_skel_pred, 
                                                         nnunet_dir, 
                                                         predicted_skeleton_dir,
@@ -173,28 +172,34 @@ def run_pipeline_for_single_case(cow_seg_filename):
     
         # 3: Connecting and labeling predicted binary skeleton
         elif step == 'Connecting skeleton':
-            if os.path.exists(os.path.join(mlt_mask_dir, connected_maskname)):
-                logger.info(f'\nUsing resampled and CONNECTED mlt mask {connected_maskname} for skeleton refinement...')
+            logger.info('\nConnecting and labeling predicted binary skeleton...')
+            if os.path.exists(os.path.join(mlt_mask_dir, connected_maskname)) and do_mask_corrections:
+                logger.info(f'Using resampled and CONNECTED mlt mask {connected_maskname} for skeleton refinement...')
                 mlt_mask_filepath_for_skel_ref = os.path.join(mlt_mask_dir, connected_maskname)
             else:
-                logger.info(f'\nUsing resampled mlt mask {mlt_mask_filepath} for skeleton refinement...')
+                logger.info(f'Using resampled mlt mask {mlt_mask_filepath} for skeleton refinement...')
                 mlt_mask_filepath_for_skel_ref = mlt_mask_filepath
             if skeleton_filepath is None:
                 skeleton_filepath = os.path.join(predicted_skeleton_dir, cow_seg_filename)
             
-            logger.info('\nConnecting and labeling predicted binary skeleton...')
             input_file_graph_extraction = connect_skeleton_mask(mlt_mask_filepath_for_skel_ref, 
                                                                 skeleton_filepath,
                                                                 skeleton_dir,
+                                                                intermediate_dir,
                                                                 max_path_length,
+                                                                remove_floating_segments,
                                                                 n_jobs)
 
         # 4: Extracting graph using voreen
         elif step == 'Graph extraction':
+            logger.info('\nExtracting graph from predicted and connected CoW skeletons using the Voreen tool...')
             if input_file_graph_extraction is None:
                 input_file_graph_extraction = os.path.join(skeleton_dir, cow_seg_filename)
+
+            if os.path.exists(input_file_graph_extraction.replace('.nii.gz', '_noFloating.nii.gz')) and remove_floating_segments:
+                logger.info(f'Using connected skeleton with FLOATING SEGMENTS REMOVED for graph extraction...')
+                input_file_graph_extraction = input_file_graph_extraction.replace('.nii.gz', '_noFloating.nii.gz')
             
-            logger.info('\nExtracting graph from predicted CoW skeletons using the Voreen tool...')
             if not os.path.exists(voreen_output_dir_case):
                 os.makedirs(voreen_output_dir_case)
             
@@ -274,6 +279,8 @@ def run_pipeline_for_single_case(cow_seg_filename):
                                     margin_from_cow,
                                     smooth_curve=True, # If True, the (splipy) curve is smoothed before geometry computation.
                                     factor_num_points=2, # Sampling factor_num_points x actual number of segment centerline points
+                                    threshold_nan_radius=0.5,  # threshold for the fraction of NaN radius values along a segment path to consider the radius computation failed
+                                    threshold_broken_segment_removal=0.66  # threshold for the fraction of the median length of a broken segment (A1 or P1) to remove it from the feature dict
                                     )
             
             logger.info('2) Bifurcation features:')
@@ -324,6 +331,8 @@ if __name__ == "__main__":
     # get list of input files
     cow_seg_files = os.listdir(cow_mlt_seg_dir)
     cow_seg_files.sort()  # sort files to ensure consistent order
+    ids = ['ct_180']
+    cow_seg_files = [f for f in cow_seg_files if '_ct_' in f]
     logger.info(f'\nProcessing {len(cow_seg_files)} cases...')
     logger.debug(f'Cases: {cow_seg_files}')
 
