@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import nibabel as nib
+import copy
 from joblib import Parallel, delayed
 from scipy.ndimage import label as nd_label
 from connect_skeleton.astar_utilities import astar_3d, find_closest_components, find_closest_component_ngh
@@ -134,9 +135,51 @@ def connect_neighboring_segments(ngh_segments, nghs_skeleton, connected_skeleton
             logger.info(f'\tConnected segments {label}-{ngh} with path length {len(path)}')
     return connections
 
+def remove_floating_segments_func(connected_skeleton):
+    """
+    Removes floating segments from the connected skeleton. We only consider Pcoms, Acom and 3rd-A2 here.
+    Floating segments are defined as those that are not connected to their corresponding neighbors.
+    
+    Parameters
+    ----------
+    connected_skeleton : ndarray
+        Labeled and connected skeleton image.
+    
+    Returns
+    -------
+    ndarray
+        Skeleton image with floating segments removed.
+    """
+    labels = np.unique(connected_skeleton)
+    labels = labels[labels != 0]  # Exclude background
+    labels_removed = []
+    unique_neighbors = compute_all_unique_neighbors(connected_skeleton)
+    if 8 in labels:
+        if not ((2, 8) in unique_neighbors and (4, 8) in unique_neighbors):
+            logger.warning('ALERT: Removing floating Pcom (8)!')
+            connected_skeleton[connected_skeleton == 8] = 0
+            labels_removed.append(8)
+    if 9 in labels:
+        if not ((3, 9) in unique_neighbors and (6, 9) in unique_neighbors):
+            logger.warning('ALERT: Removing floating Pcom (9)!')
+            connected_skeleton[connected_skeleton == 9] = 0
+            labels_removed.append(9)
+    if 10 in labels:
+        if not ((10, 11) in unique_neighbors and (10, 12) in unique_neighbors):
+            logger.warning('ALERT: Removing floating Acom (10)!')
+            connected_skeleton[connected_skeleton == 10] = 0
+            labels_removed.append(10)
+    if 15 in labels:
+        if not ((10, 15) in unique_neighbors):
+            logger.warning('ALERT: Removing floating 3rd-A2 (15)!')
+            connected_skeleton[connected_skeleton == 15] = 0
+            labels_removed.append(15)
 
-def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connected_skeleton_dir: str, 
-                          max_path_length: int, n_jobs: int = 12):
+    return connected_skeleton, labels_removed
+
+
+def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connected_skeleton_dir: str, intermediate_dir: str,
+                          max_path_length: int, remove_floating_segments: bool = False, n_jobs: int = 12):
     """
     Connects fragmented skeleton and assigns anatomical labels based on a multi-label mask.
     
@@ -153,8 +196,12 @@ def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connec
         Path to the binary skeleton file (.nii.gz)
     connected_skeleton_dir : str
         Directory to save the connected skeleton
+    intermediate_dir : str
+        Directory to save intermediate files in case of floating segment removal
     max_path_length : int
         Maximum length of paths to connect components
+    remove_floating_segments : bool, optional
+        Whether to remove floating segments after connecting (default: False)
     n_jobs : int, optional
         Number of parallel jobs to run (default: 12)
         
@@ -169,6 +216,7 @@ def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connec
                 f'\n\t- skeleton input={skeleton_filepath}'
                 f'\n\t- connected skeleton output={connected_skeleton_dir}'
                 f'\n\t- max_path_length={max_path_length}'
+                f'\n\t- remove_floating_segments={remove_floating_segments}'
                 f'\n\t- n_jobs={n_jobs}')
 
     # load masks
@@ -234,6 +282,7 @@ def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connec
             for ngh_segments in nghs_mask)
     for result in results:
         connected_skeleton += result
+
     
     # Getting num_features
     binary_skel = (connected_skeleton > 0).astype(np.uint8)
@@ -246,7 +295,6 @@ def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connec
         relabel_isolated_voxels(connected_skeleton, label=10)
 
     logger.info(f'Connecting skeleton done! Skeleton has {num_features} components')
-
     segment_skeleton_img = nib.Nifti1Image(connected_skeleton, skeleton.affine, skeleton.header)
     connected_skeleton_savepath = os.path.join(connected_skeleton_dir, os.path.basename(skeleton_filepath))
     if not os.path.exists(connected_skeleton_dir):
@@ -254,6 +302,27 @@ def connect_skeleton_mask(mlt_mask_filepath: str, skeleton_filepath: str, connec
         os.makedirs(connected_skeleton_dir)
     logger.info(f'Saving connected skeleton to {connected_skeleton_savepath}')
     nib.save(segment_skeleton_img, connected_skeleton_savepath)
+
+    if remove_floating_segments:
+        connected_skeleton_floating_removed = copy.deepcopy(connected_skeleton)
+        connected_skeleton_floating_removed, labels_removed = remove_floating_segments_func(connected_skeleton_floating_removed)
+        if not np.array_equal(connected_skeleton, connected_skeleton_floating_removed):
+            logger.warning(f'ALERT: Floating segments removed! Labels removed: {labels_removed}')
+            # Getting num_features
+            binary_skel = (connected_skeleton_floating_removed > 0).astype(np.uint8)
+            _, num_features = nd_label(binary_skel, structure=np.ones((3, 3, 3)))
+            logger.info(f'After removing floating segments, skeleton has {num_features} components')
+            segment_skeleton_img = nib.Nifti1Image(connected_skeleton_floating_removed, skeleton.affine, skeleton.header)
+            connected_skeleton_nofloat_savepath = connected_skeleton_savepath.replace('.nii.gz', '_noFloating.nii.gz')
+            logger.info(f'Saving connected skeleton with floating segments removed to {connected_skeleton_nofloat_savepath}')
+            nib.save(segment_skeleton_img, connected_skeleton_nofloat_savepath)
+            # Also save .txt file in intermediate dir with removed labels
+            removed_labels_dir = os.path.join(intermediate_dir, 'cow_removed_labels')
+            if not os.path.exists(removed_labels_dir):
+                os.makedirs(removed_labels_dir)
+            removed_labels_savepath = os.path.join(removed_labels_dir, os.path.basename(skeleton_filepath).replace('.nii.gz', f'.txt'))
+            with open(removed_labels_savepath, 'w') as f:
+                f.writelines([f"removed labels: {labels_removed}\n"])
 
     return connected_skeleton_savepath
 

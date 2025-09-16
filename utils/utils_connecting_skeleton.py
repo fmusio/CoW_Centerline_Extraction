@@ -324,7 +324,7 @@ def relabel_isolated_voxels(skeleton_array, label=10):
 
 def add_obligatory_neighbors(nghs_mask):
     """
-    This function adds obligatory neighbors to the mask based already existing connectivities.
+    This function adds obligatory neighbors to the mask based on already existing connectivities.
     It ensures that the obligatory neighbors are present, even if they are not 
     connected in the mask (imperfect predictions).
 
