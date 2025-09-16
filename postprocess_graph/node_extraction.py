@@ -506,12 +506,87 @@ def get_ba_pca_nodes(polydata, variant_dict):
             assert pcom_label in labels_array
             assert variant_dict['posterior'][pcom_name], 'R-Pcom not present!'
             assert len(pca_pcom_boundary) == 1, 'Wrong number of Pcom/R-PCA boundaries!'
+            # either branching PCA or broken P1! 
             if len(pca_nodes_3) > 0:
-                assert len(pca_nodes_3) == 1, 'Wrong number of R-PCA 3-nodes!'
-                assert len(pca_nodes_1) == 3, 'Wrong number of R-PCA 1-nodes'
-                pca_end = get_node_dict_entry(pca_nodes_3[0], 3, pca_label, polydata)
-                pca_boundary_pcom = get_node_dict_entry(pca_pcom_boundary[0], 2, pca_label, polydata)
-                logger.debug(f'\tPCA end is branch point: {pca_end}')
+                if len(pca_nodes_3) == 1:
+                    if len(pca_nodes_1) == 2:
+                        # Case: Broken P1
+                        if pca_pcom_boundary[0] == pca_nodes_3[0]:
+                            pca_boundary_pcom = get_node_dict_entry(pca_pcom_boundary[0], 3, pca_label, polydata)
+                            path = find_shortest_path(pca_nodes_1[0], pca_nodes_1[1], polydata, [pca_label])['path']
+                            assert assert_node_on_path(pca_nodes_3[0], path)
+                            logger.warning('\tALERT: P1 broken but present?!')
+                            pcom_bif_id = pca_nodes_3[0]
+                            pca_pcom_bif = get_node_dict_entry(pcom_bif_id, 3, pca_label, polydata)
+                            logger.debug(f'\tPcom bifurcation: {pca_pcom_bif}')
+                            path_ids = [p[0] for p in path] + [path[-1][1]]
+                            # Split path_ids at pcom_bif_id
+                            pcom_bif_index = path_ids.index(pcom_bif_id)
+                            num_points = len(path_ids)
+                            # Check if pcom bifurcation is in the first half of the path
+                            if pcom_bif_index + 1 < num_points / 2:
+                                # If bifurcation is in first half, first node is BA boundary
+                                ba_boundary_id = pca_nodes_1[0]
+                                pca_end_id = pca_nodes_1[1]
+                            elif pcom_bif_index > num_points / 2:
+                                # If bifurcation is in second half, second node is BA boundary
+                                ba_boundary_id = pca_nodes_1[1]
+                                pca_end_id = pca_nodes_1[0]
+                            else:
+                                logger.warning('\tALERT: P1 and P2 of same length?!')
+                                raise ValueError('P1 and P2 of same length?!')
+
+                            # Create the node dictionary entries
+                            pca_boundary_ba = get_node_dict_entry(ba_boundary_id, 1, pca_label, polydata)
+                            pca_end = get_node_dict_entry(pca_end_id, 1, pca_label, polydata)
+
+                            logger.debug(f'\tBA boundary: {pca_boundary_ba}')
+                            logger.debug(f'\tPCA end: {pca_end}')
+                        else:
+                            logger.warning('\tALERT: Pcom bifurcation entirely within Pcom?!')
+                            raise ValueError('Pcom bifurcation entirely within Pcom?!')
+                    
+                    elif len(pca_nodes_1) == 3:
+                        # pcom/pca boundary must be a 1-node
+                        assert pca_pcom_boundary[0] in pca_nodes_1, 'Pcom/PCA boundary not a 1-node?!'
+                        pca_boundary_pcom = get_node_dict_entry(pca_pcom_boundary[0], 2, pca_label, polydata)
+                        path = find_shortest_path(pca_nodes_3[0], pca_pcom_boundary[0], polydata, [pca_label])['path']
+                        if len(path) < 6: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
+                            logger.warning('\tALERT: P1 broken but present?!')
+                            pcom_bif_id = pca_nodes_3[0]
+                            pca_pcom_bif = get_node_dict_entry(pcom_bif_id, 3, pca_label, polydata)
+                            logger.debug(f'\tPcom bifurcation: {pca_pcom_bif}')
+                            pca_nodes_1.remove(pca_pcom_boundary[0])
+                            path = find_shortest_path(pca_nodes_1[0], pca_nodes_1[1], polydata, [pca_label])['path']
+                            assert assert_node_on_path(pca_nodes_3[0], path)
+                            path_ids = [p[0] for p in path] + [path[-1][1]]
+                            # Split path_ids at pcom_bif_id
+                            pcom_bif_index = path_ids.index(pcom_bif_id)
+                            num_points = len(path_ids)
+                            # Check if pcom bifurcation is in the first half of the path
+                            if pcom_bif_index + 1 < num_points / 2:
+                                # If bifurcation is in first half, first node is BA boundary
+                                ba_boundary_id = pca_nodes_1[0]
+                                pca_end_id = pca_nodes_1[1]
+                            elif pcom_bif_index > num_points / 2:
+                                # If bifurcation is in second half, second node is BA boundary
+                                ba_boundary_id = pca_nodes_1[1]
+                                pca_end_id = pca_nodes_1[0]
+                            else:
+                                logger.warning('\tALERT: P1 and P2 of same length?!')
+                                raise ValueError('P1 and P2 of same length?!')
+                        elif len(path) > 15: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value large enough!
+                            logger.debug(f'\tPCA end is branch point: {pca_end}')
+                            pca_end = get_node_dict_entry(pca_nodes_3[0], 3, pca_label, polydata)
+                    
+                    else:
+                        logger.warning(f'\tALERT: More than 3 or less than 2 PCA 1-nodes present?! {pca_nodes_1}')
+                        raise ValueError('More than 3 or less than 2 PCA 1-nodes present?!')
+                            
+                else:
+                    logger.warning(f'\tALERT: More than 1 PCA 3-node present?! {pca_nodes_3}')
+                    raise ValueError('More than 1 PCA 3-node present?!')
+
             else:
                 assert len(pca_nodes_1) == 2, 'Wrong number of R-PCA 1-nodes'
                 pca_boundary_pcom = get_node_dict_entry(pca_pcom_boundary[0], 2, pca_label, polydata)
@@ -967,25 +1042,24 @@ def get_aca_acom_nodes(polydata, variant_dict):
             aca_boundary_acom = get_node_dict_entry(aca_acom_boundary[0], 2, aca_label, polydata)
             acom_boundary_aca = get_node_dict_entry(aca_acom_boundary[0], 2, acom_label, polydata)
             aca_nodes_1.remove(aca_acom_boundary[0])
-            # Either ACA end is branching point or blocked but present A1
+            # Either ACA end is branching point or broken but present A1
             if len(aca_nodes_1) == 2:
                 if len(aca_acom_nodes_3) == 1:
                     acom_bif_id, min_dist = find_closest_node_to_point(aca_acom_nodes_3, aca_acom_boundary[0], aca_label, polydata)
                     if min_dist < 6: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
                         path = find_shortest_path(aca_nodes_1[0], aca_nodes_1[1], polydata, [aca_label])['path']
                         if assert_node_on_path(acom_bif_id, path):
-                            logger.warning('\tALERT: A1 blocked but present?!')
+                            logger.warning('\tALERT: A1 broken but present?!')
                             acom_bif_node = get_node_dict_entry(acom_bif_id, 3, aca_label, polydata)
                             logger.debug(f'\tClosest ACA/Acom 3-node to ACA/Acom boundary is Acom bifurcation: {acom_bif_node}')
-                            # NOTE: If A1 is present but blocked, we still label it as missing A1 (functionally, there is still no blood supply)
+                            # NOTE: If A1 is present but broken, we still label it as missing A1 (functionally, there is still no blood supply)
                             # variant_dict['anterior'][f'{a1_name}'] = True
                             z_values = [polydata.GetPoints().GetPoint(aca_nodes_1[0])[2], polydata.GetPoints().GetPoint(aca_nodes_1[1])[2]]
                             argmax_zvalue = np.argmax(z_values)
                             aca_end = get_node_dict_entry(aca_nodes_1[argmax_zvalue], 1, aca_label, polydata)
                             logger.debug(f'\tACA end is 1-node with max z-value: {aca_end}')
                             aca_boundary_ica = get_node_dict_entry(aca_nodes_1[(argmax_zvalue+1)%2], 1, aca_label, polydata)
-                            logger.debug(f'\tICA boundary is remaining 1-node: {aca_boundary_ica}')
-                            
+                            logger.debug(f'\tICA boundary is remaining 1-node: {aca_boundary_ica}') 
 
 
         # ACA end

@@ -136,6 +136,9 @@ def extract_segments(nodes_dict, variant_dict, polydata):
         if 'BA boundary' in RPCA_dict:
             if posterior_top['R-P1'] and posterior_top['L-P1']:
                 segments['R-PCA'] = [(BA_dict['BA bifurcation'][0]['id'], rp2_end, [1, 2])]
+            # Case: broken P1!
+            elif not posterior_top['R-P1']:
+                segments['R-PCA'] = [(RPCA_dict['BA boundary'][0]['id'], rp2_end, [1, 2])]
         else:
             rpca_start = RICA_dict['Pcom bifurcation'][0]['id']
             segments['R-Pcom'] = [(rpca_start, rp2_end, [2, 4, 8])]
@@ -158,6 +161,9 @@ def extract_segments(nodes_dict, variant_dict, polydata):
         if 'BA boundary' in LPCA_dict:
             if posterior_top['R-P1'] and posterior_top['L-P1']:
                 segments['L-PCA'] = [(BA_dict['BA bifurcation'][0]['id'], lp2_end, [1, 3])]
+            # Case: broken P1!
+            elif not posterior_top['L-P1']:
+                segments['L-PCA'] = [(LPCA_dict['BA boundary'][0]['id'], lp2_end, [1, 3])]
         else:
             LICA_dict = nodes_dict['6']
             lpca_start = LICA_dict['Pcom bifurcation'][0]['id']
@@ -238,13 +244,15 @@ def extract_segments(nodes_dict, variant_dict, polydata):
             add_remaining_segments(7, 'L-MCA', lmca_end, lmca_end, polydata)
 
     # R-Pcom
-    if '8' in nodes_dict and posterior_top['R-P1'] and 'ICA start' in RICA_dict:
+    if ('8' in nodes_dict and posterior_top['R-P1'] and 'ICA start' in RICA_dict) \
+        or ('8' in nodes_dict and 'BA boundary' in RPCA_dict and 'ICA start' in RICA_dict):
         rpcom_start = RICA_dict['Pcom bifurcation'][0]['id']
         rpcom_end = RPCA_dict['Pcom bifurcation'][0]['id']
         segments['R-Pcom'] = [(rpcom_start, rpcom_end, [2, 4, 8])]
 
     # L-Pcom
-    if '9' in nodes_dict and posterior_top['L-P1'] and 'ICA start' in LICA_dict:
+    if ('9' in nodes_dict and posterior_top['L-P1'] and 'ICA start' in LICA_dict) \
+        or ('9' in nodes_dict and 'BA boundary' in LPCA_dict and 'ICA start' in LICA_dict):
         lpcom_start = LICA_dict['Pcom bifurcation'][0]['id']
         lpcom_end = LPCA_dict['Pcom bifurcation'][0]['id']
         segments['L-Pcom'] = [(lpcom_start, lpcom_end, [3, 6, 9])]
@@ -259,9 +267,9 @@ def extract_segments(nodes_dict, variant_dict, polydata):
                 segments['R-ACA'] = [(RICA_dict['ICA bifurcation'][0]['id'], ra2_end, [4, 11])]
             elif 'ICA boundary' in RACA_dict and anterior_top['R-A1']:
                 segments['L-ACA'] = [(RACA_dict['ICA boundary'][0]['id'], ra2_end, [11])]
-            # case blocked A1
+            # case broken A1
             elif 'ICA boundary' in RACA_dict:
-                assert 'ICA bifurcation' not in RICA_dict, 'R-A1 blocked but ICA bifurcation present?!'
+                assert 'ICA bifurcation' not in RICA_dict, 'R-A1 broken but ICA bifurcation present?!'
                 segments['R-ACA'] = [(RACA_dict['ICA boundary'][0]['id'], ra2_end, [11])]
             else:
                 segments['Acom'] = [(LACA_dict['Acom bifurcation'][0]['id'], ra2_end, [10, 11, 12])]
@@ -278,9 +286,9 @@ def extract_segments(nodes_dict, variant_dict, polydata):
                 segments['L-ACA'] = [(LICA_dict['ICA bifurcation'][0]['id'], la2_end, [6, 12])]
             elif 'ICA boundary' in LACA_dict and anterior_top['L-A1']:
                 segments['L-ACA'] = [(LACA_dict['ICA boundary'][0]['id'], la2_end, [12])]
-            # case: blocked A1
+            # case: broken A1
             elif 'ICA boundary' in LACA_dict:
-                assert 'ICA bifurcation' not in LICA_dict, 'L-A1 blocked but ICA bifurcation present?!'
+                assert 'ICA bifurcation' not in LICA_dict, 'L-A1 broken but ICA bifurcation present?!'
                 segments['L-ACA'] = [(LACA_dict['ICA boundary'][0]['id'], la2_end, [12])]
             else:
                 segments['Acom'] = [(RACA_dict['Acom bifurcation'][0]['id'], la2_end, [10, 11, 12])]

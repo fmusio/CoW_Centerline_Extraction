@@ -499,17 +499,19 @@ def reorder_and_smooth(node_dict, variant_dict, polydata, window_size=5):
 
             # preemptively insert last point
             coords_new_last = points_array[-1]
-            if segment_key == 'Acom' and (variant_dict['anterior']['L-A1'] and variant_dict['anterior']['R-A1']) \
-            or segment_key == 'Acom' and ('Acom bifurcation' in node_dict['12'] and 'ICA boundary' in node_dict['12'] and variant_dict['anterior']['R-A1']) \
-            or segment_key == 'Acom' and ('Acom bifurcation' in node_dict['11'] and 'ICA boundary' in node_dict['11'] and variant_dict['anterior']['L-A1']):
+            if (segment_key == 'Acom' and (variant_dict['anterior']['L-A1'] and variant_dict['anterior']['R-A1'])) \
+            or (segment_key == 'Acom' and ('Acom bifurcation' in node_dict['12'] and 'ICA boundary' in node_dict['12'] and variant_dict['anterior']['R-A1'])) \
+            or (segment_key == 'Acom' and ('Acom bifurcation' in node_dict['11'] and 'ICA boundary' in node_dict['11'] and variant_dict['anterior']['L-A1'])):
                 assert point_ids[-1] in points_fixed
                 coords_new_last = points_to_fix[point_ids[-1]]
                 points_array[-1] = coords_new_last
-            if segment_key == 'R-Pcom' and variant_dict['posterior']['R-P1']:
+            if (segment_key == 'R-Pcom' and variant_dict['posterior']['R-P1']) \
+                or (segment_key == 'R-Pcom' and ('Pcom bifurcation' in node_dict['2'] and 'BA boundary' in node_dict['2'])):
                 assert point_ids[-1] in points_fixed
                 coords_new_last = points_to_fix[point_ids[-1]]
                 points_array[-1] = coords_new_last
-            if segment_key == 'L-Pcom' and variant_dict['posterior']['L-P1']:
+            if (segment_key == 'L-Pcom' and variant_dict['posterior']['L-P1']) \
+                or (segment_key == 'L-Pcom' and ('Pcom bifurcation' in node_dict['3'] and 'BA boundary' in node_dict['3'])):
                 assert point_ids[-1] in points_fixed
                 coords_new_last = points_to_fix[point_ids[-1]]
                 points_array[-1] = coords_new_last

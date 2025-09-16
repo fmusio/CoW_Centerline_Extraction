@@ -134,16 +134,19 @@ def test_nodes_against_topology(nodes_dict, variant_dict):
     # Missing both P1
     if not variant_dict['posterior']['R-P1'] and not variant_dict['posterior']['L-P1']:
         assert nodes_dict['1'].keys() == set(BA) - {'R-PCA boundary'} - {'L-PCA boundary'}
-        assert nodes_dict['2'].keys() == set(RPCA) - {'Pcom bifurcation'} - {'BA boundary'}
-        assert nodes_dict['3'].keys() == set(LPCA) - {'Pcom bifurcation'} - {'BA boundary'}
+        # NOTE: below assertions commented out because in broken P1 cases, the Pcom bifurcation might still be present
+        # assert nodes_dict['2'].keys() == set(RPCA) - {'Pcom bifurcation'} - {'BA boundary'}
+        # assert nodes_dict['3'].keys() == set(LPCA) - {'Pcom bifurcation'} - {'BA boundary'}
     # Missing R-P1 only
     elif not variant_dict['posterior']['R-P1']:
         assert nodes_dict['1'].keys() <= set(BA) - {'R-PCA boundary'}
-        assert nodes_dict['2'].keys() == set(RPCA) - {'Pcom bifurcation'} - {'BA boundary'}
+        # NOTE: below assertions commented out because in broken P1 cases, the Pcom bifurcation might still be present
+        # assert nodes_dict['2'].keys() == set(RPCA) - {'Pcom bifurcation'} - {'BA boundary'}
     # Missing L-P1 only
     elif not variant_dict['posterior']['L-P1']:
         assert nodes_dict['1'].keys() <= set(BA) - {'L-PCA boundary'}
-        assert nodes_dict['3'].keys() == set(LPCA) - {'Pcom bifurcation'} - {'BA boundary'}
+        # NOTE: below assertions commented out because in broken P1 cases, the Pcom bifurcation might still be present
+        # assert nodes_dict['3'].keys() == set(LPCA) - {'Pcom bifurcation'} - {'BA boundary'}
     # Both P1 present
     else:
         assert nodes_dict['1'].keys() == set(BA)
@@ -179,12 +182,12 @@ def test_nodes_against_topology(nodes_dict, variant_dict):
     # Missing R-A1 only
     if not variant_dict['anterior']['R-A1']:
         assert nodes_dict['4'].keys() <= set(RICA) - {'ICA bifurcation'} - {'ACA boundary'}
-        # blocked A1 cases are special, still having an ICA boundary and an Acom bifurcation
+        # broken A1 cases are special, still having an ICA boundary and an Acom bifurcation
         assert (nodes_dict['11'].keys() == {'Acom boundary', 'ACA end'}) or (nodes_dict['11'].keys() == set(RACA))
     # Missing L-A1 only
     elif not variant_dict['anterior']['L-A1']:
         assert nodes_dict['6'].keys() <= set(LICA) - {'ICA bifurcation'} - {'ACA boundary'}
-        # blocked A1 cases are special, still having an ICA boundary and an Acom bifurcation
+        # broken A1 cases are special, still having an ICA boundary and an Acom bifurcation
         assert (nodes_dict['12'].keys() == {'Acom boundary', 'ACA end'}) or (nodes_dict['12'].keys() == set(LACA))
     # Missing no A1
     else:
