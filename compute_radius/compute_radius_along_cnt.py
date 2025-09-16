@@ -248,30 +248,6 @@ def get_remaining_bif_ids(bif_near_cells, bif_point_ids, polydata, nr_edges=6):
 
     return bif_near_cells, bif_point_ids
 
-
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.scatter(points_2d[:, 0], points_2d[:, 1], s=10, color='blue', label='Surface Points')
-    ax.scatter(midpoint_2d[0], midpoint_2d[1], color='red', s=50, marker='x', label='Midpoint')
-
-    # Draw circle with min_rad
-    min_circle = plt.Circle(midpoint_2d, min_rad, fill=False, color='green', linestyle='--', label='MIS Radius')
-    ax.add_patch(min_circle)
-
-    # Draw circle with ce_radius
-    ce_circle = plt.Circle(midpoint_2d, ce_radius, fill=False, color='orange', linestyle='-', label='CE Radius')
-    ax.add_patch(ce_circle)
-
-    ax.set_xlim(-2.5, 2.5)
-    ax.set_ylim(-2.5, 2.5)
-    ax.set_aspect('equal')
-    # ax.set_title(f'Cross-Section Analysis for Radius Estimation')
-    ax.legend(fontsize=14, loc='upper left')
-    plt.tick_params(axis='both', labelsize=14)
-    plt.grid(True, which='both', linestyle='-', linewidth=0.5)
-    ax.xaxis.set_major_locator(plt.MultipleLocator(1))
-    ax.yaxis.set_major_locator(plt.MultipleLocator(1))
-    plt.show()
-
 def get_seg_meshes(nii_mask, label_masks, distance_transforms, n_jobs=12):
     """
     Generate meshes from segments in a labeled volume.
@@ -312,7 +288,8 @@ def get_seg_meshes(nii_mask, label_masks, distance_transforms, n_jobs=12):
 
     affine = nii_mask.affine
     nii_data = nii_mask.get_fdata().astype(np.uint8)
-    labels_array = np.unique(nii_data)
+    assert label_masks.keys() == distance_transforms.keys(), "Label masks and distance transforms keys do not match."
+    labels_array = [int(key) for key in label_masks.keys()]
 
     def mesh_process_single_label(label, nii_data, ngh_segments, distance_transforms, label_masks, affine):
         """Process a single label to create a mesh"""
