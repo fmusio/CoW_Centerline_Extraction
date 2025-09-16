@@ -8,7 +8,8 @@ from logger import logger
 
 def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str, feature_dir: str, modality: str = None, 
                              radius_attribute: str = 'ce_radius', median_p1: float = 7.2, median_a1: float = 15.6, median_c7: float = 7.1, 
-                             margin_from_cow: int = 10, smooth_curve: bool = True, factor_num_points: int = 2):
+                             margin_from_cow: int = 10, smooth_curve: bool = True, factor_num_points: int = 2, 
+                             threshold_nan_radius: float = 0.5, threshold_broken_segment_removal: float = 0.66) -> str:
     """
     Run geometry extraction for all segments of the CoW. Splipy is used for bi-cubic interpolation.
 
@@ -25,6 +26,8 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
     margin_from_cow (int): Margin from CoW to cap segments.
     smooth_curve (bool): If True, the (splipy) curve is smoothed before geometry computation.
     factor_num_points (int): Factor to increase the number of sample points along the curve.
+    threshold_nan_radius (float): Threshold for the fraction of NaN radius values along a segment path to consider the radius computation failed.
+    threshold_broken_segment_removal (float): Threshold for the fraction of the median length of a broken segment (A1 or P1) to remove it from the feature dict.
 
     Returns:
     savepath (str): Path to the saved geometry JSON file.
@@ -55,6 +58,8 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                 f'\n\t- median_a1={median_a1}'
                 f'\n\t- median_c7={median_c7}'
                 f'\n\t- margin_from_cow={margin_from_cow}'
+                f'\n\t- threshold_nan_radius={threshold_nan_radius}'
+                f'\n\t- threshold_broken_segment_removal={threshold_broken_segment_removal}'
                 )
         
     geometry_dict = {}
@@ -84,7 +89,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
             if len(paths) == 1:
                 path = paths[0]['path']
                 # Radius along path
-                path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                 # Geometry along the path
                 path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                 geometry_dict[segment_name] = [get_dict_entry(segment[0], path_radius, path_geometry, nan_edges=nan_edges)]
@@ -161,7 +166,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
 
                         for path in [path1, path2]:
                             # Radius along path
-                            path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                            path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                             # Geometry along the path
                             path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                             list_geom_dicts.append(get_dict_entry((path[0][0], path[-1][1]), path_radius, path_geometry, nan_edges=nan_edges))
@@ -172,7 +177,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                         for p in paths:
                             path = p['path']
                             # Radius along path
-                            path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                            path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                             # Geometry along the path
                             path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                             list_geom_dicts.append(get_dict_entry(segment[0], path_radius, path_geometry, nan_edges=nan_edges))
@@ -181,7 +186,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                 elif segment_name in ['R-P2', 'L-P2', 'R-A2', 'L-A2']:
                     path = find_shortest_path(start_node, end_node, polydata, label)['path']
                     # Radius along path
-                    path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                    path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                     # Geometry along the path
                     path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                     geometry_dict[segment_name] = [get_dict_entry(segment[0], path_radius, path_geometry, nan_edges=nan_edges)]
@@ -191,7 +196,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                     for p in paths:
                         path = p['path']
                         # Radius along path
-                        path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                        path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                         # Geometry along the path
                         path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                         list_geom_dicts.append(get_dict_entry(segment[0], path_radius, path_geometry, nan_edges=nan_edges))
@@ -207,7 +212,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                 if len(paths) == 1:
                     path = paths[0]['path']
                     # Radius along path
-                    path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                    path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                     # Geometry along the path
                     path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                     list_geom_dicts.append(get_dict_entry(tpl, path_radius, path_geometry, nan_edges=nan_edges))
@@ -217,15 +222,29 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                     for p in paths:
                         path = p['path']
                         # Radius along path
-                        path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute)
+                        path_radius, nan_edges = compute_radius_along_path(polydata, path, radius_attribute, nan_threshold=threshold_nan_radius)
                         # Geometry along the path
                         path_geometry = compute_geometry_along_path(polydata, path, radius_attribute=radius_attribute, factor_num_points=factor_num_points, comp_tor=False, smooth=smooth_curve, plot=False)
                         list_geom_dicts.append(get_dict_entry(tpl, path_radius, path_geometry, nan_edges=nan_edges))
             geometry_dict[segment_name] = list_geom_dicts
     
-    # remove A1 entry if A1 blocked (not touching ICA) and segment shorter than half the median_a1 length
+    # remove P1 entry if P1 broken (not touching BA) and segment shorter than 2/3 the median_p1 length
     # NOTE: This threshold might be changed
-    threshold_a1 = 0.5 * median_a1
+    threshold_p1 = threshold_broken_segment_removal * median_p1
+    if not variant_dict['posterior']['R-P1']:
+        if 'Pcom bifurcation' in nodes_dict['2'] and 'BA boundary' in nodes_dict['2']:
+            if 'R-P1' in geometry_dict and geometry_dict['R-P1'][0]['length'] < threshold_p1:
+                logger.warning(f'\tALERT: Removing R-P1 entry from feature dict!')
+                geometry_dict.pop('R-P1')
+    if not variant_dict['posterior']['L-P1']:
+        if 'Pcom bifurcation' in nodes_dict['3'] and 'BA boundary' in nodes_dict['3']:
+            if 'L-P1' in geometry_dict and geometry_dict['L-P1'][0]['length'] < threshold_p1:
+                logger.warning(f'\tALERT: Removing L-P1 entry from feature dict!')
+                geometry_dict.pop('L-P1')
+    
+    # remove A1 entry if A1 broken (not touching ICA) and segment shorter than 2/3 the median_a1 length
+    # NOTE: This threshold might be changed
+    threshold_a1 = threshold_broken_segment_removal * median_a1
     if not variant_dict['anterior']['R-A1']:
         if 'Acom bifurcation' in nodes_dict['11'] and 'ICA boundary' in nodes_dict['11']:
             if 'R-A1' in geometry_dict and geometry_dict['R-A1'][0]['length'] < threshold_a1:

@@ -35,7 +35,8 @@ def extract_segments(nodes_dict, variant_dict):
         RPCA_dict = nodes_dict['2']
         RP2_end = RPCA_dict['PCA end'][0]['id']
         if 'BA boundary' in RPCA_dict:
-            assert posterior_top['R-P1']
+            # NOTE: For broken P1, we still have a BA boundary even if P1 is "missing"
+            # assert posterior_top['R-P1']
             RPCA_start = [RPCA_dict['BA boundary'][i]['id'] for i in range(len(RPCA_dict['BA boundary']))]
             if 'Pcom bifurcation' in RPCA_dict:
                 RP1_end = RPCA_dict['Pcom bifurcation'][0]['id']
@@ -54,7 +55,8 @@ def extract_segments(nodes_dict, variant_dict):
         LPCA_dict = nodes_dict['3']
         LP2_end = LPCA_dict['PCA end'][0]['id']
         if 'BA boundary' in LPCA_dict:
-            assert posterior_top['L-P1']
+            # NOTE: For broken P1, we still have a BA boundary even if P1 is "missing"
+            # assert posterior_top['L-P1']
             LPCA_start = [LPCA_dict['BA boundary'][i]['id'] for i in range(len(LPCA_dict['BA boundary']))]
             if 'Pcom bifurcation' in LPCA_dict:
                 LP1_end = LPCA_dict['Pcom bifurcation'][0]['id']
@@ -171,9 +173,9 @@ def extract_segments(nodes_dict, variant_dict):
                     segments['R-A1'] = [(RACA_start, RA1_end, 11)]
                     segments['R-A2'] = [(RA1_end, RA2_end, 11)]
                 segments['R-ACA'] = [(RACA_start, RA2_end, 11)]
-            else: # blocked A1!
-                assert anterior_top['Acom'], 'A1 blocked but no Acom?!'
-                assert 'Acom bifurcation' in RACA_dict, 'A1 blocked but no Acom?!'
+            else: # broken A1!
+                assert anterior_top['Acom'], 'A1 broken but no Acom?!'
+                assert 'Acom bifurcation' in RACA_dict, 'A1 broken but no Acom?!'
                 RACA_start = RACA_dict['ICA boundary'][0]['id']
                 RA1_end = RACA_dict['Acom bifurcation'][0]['id']
                 segments['R-A1'] = [(RACA_start, RA1_end, 11)]
@@ -199,9 +201,9 @@ def extract_segments(nodes_dict, variant_dict):
                     segments['L-A1'] = [(LACA_start, LA1_end, 12)]
                     segments['L-A2'] = [(LA1_end, LA2_end, 12)]
                 segments['L-ACA'] = [(LACA_start, LA2_end, 12)]
-            else: # blocked A1!
-                assert anterior_top['Acom'], 'A1 blocked but no Acom?!'
-                assert 'Acom bifurcation' in LACA_dict, 'A1 blocked but no Acom?!'
+            else: # broken A1!
+                assert anterior_top['Acom'], 'A1 broken but no Acom?!'
+                assert 'Acom bifurcation' in LACA_dict, 'A1 broken but no Acom?!'
                 LACA_start = LACA_dict['ICA boundary'][0]['id']
                 LA1_end = LACA_dict['Acom bifurcation'][0]['id']
                 segments['L-A1'] = [(LACA_start, LA1_end, 12)]
