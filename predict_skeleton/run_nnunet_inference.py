@@ -104,6 +104,7 @@ def nnunet_predict_skeleton(mlt_mask_filepath: str, nnunet_dir: str, predicted_s
 
     if os.path.exists(pred_skel_file):
         logger.info(f"Predicted skeleton saved to {predicted_skeleton_dir}.")
+        # rename file if it contains '_connected' in the name
         if pred_skel_file.endswith('_connected.nii.gz'):
             pred_skel_file_saved = pred_skel_file.replace('_connected.nii.gz', '.nii.gz')
             os.rename(pred_skel_file, pred_skel_file_saved)
