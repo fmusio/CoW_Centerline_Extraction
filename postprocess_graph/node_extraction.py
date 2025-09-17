@@ -575,6 +575,14 @@ def get_ba_pca_nodes(polydata, variant_dict):
                             else:
                                 logger.warning('\tALERT: P1 and P2 of same length?!')
                                 raise ValueError('P1 and P2 of same length?!')
+                            
+                            # Create the node dictionary entries
+                            pca_boundary_ba = get_node_dict_entry(ba_boundary_id, 1, pca_label, polydata)
+                            pca_end = get_node_dict_entry(pca_end_id, 1, pca_label, polydata)
+
+                            logger.debug(f'\tBA boundary: {pca_boundary_ba}')
+                            logger.debug(f'\tPCA end: {pca_end}')
+                            
                         elif len(path) > 15: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value large enough!
                             logger.debug(f'\tPCA end is branch point: {pca_end}')
                             pca_end = get_node_dict_entry(pca_nodes_3[0], 3, pca_label, polydata)
