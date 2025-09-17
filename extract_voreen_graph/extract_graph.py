@@ -117,6 +117,9 @@ def run_graph_extraction(input_path: str, output_dir: str, voreen_tool_path: str
     
     extension = ".nii.gz" if input_path.endswith(".nii.gz") else "." + input_path.split(".")[-1]
     image_name = os.path.basename(input_path)[:-len(extension)]
+    # change name if floating segments have been removed
+    if '_noFloating' in image_name:
+        image_name = image_name.replace('_noFloating', '')
 
     logger.info(f'Extracting Voreen graph with args:'
                 f'\n\t- input_path={input_path}'
