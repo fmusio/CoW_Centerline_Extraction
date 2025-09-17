@@ -155,17 +155,17 @@ def remove_floating_segments_func(connected_skeleton):
     labels_removed = []
     unique_neighbors = compute_all_unique_neighbors(connected_skeleton)
     if 8 in labels:
-        if not ((2, 8) in unique_neighbors and (4, 8) in unique_neighbors):
+        if not ((2, 8) in unique_neighbors or (4, 8) in unique_neighbors):
             logger.warning('ALERT: Removing floating Pcom (8)!')
             connected_skeleton[connected_skeleton == 8] = 0
             labels_removed.append(8)
     if 9 in labels:
-        if not ((3, 9) in unique_neighbors and (6, 9) in unique_neighbors):
+        if not ((3, 9) in unique_neighbors or (6, 9) in unique_neighbors):
             logger.warning('ALERT: Removing floating Pcom (9)!')
             connected_skeleton[connected_skeleton == 9] = 0
             labels_removed.append(9)
     if 10 in labels:
-        if not ((10, 11) in unique_neighbors and (10, 12) in unique_neighbors):
+        if not ((10, 11) in unique_neighbors or (10, 12) in unique_neighbors):
             logger.warning('ALERT: Removing floating Acom (10)!')
             connected_skeleton[connected_skeleton == 10] = 0
             labels_removed.append(10)
