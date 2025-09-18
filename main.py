@@ -16,16 +16,11 @@ from extract_features.compute_bifurcation_geometry import extract_bifurcation_ge
 from extract_features.compute_segment_geometry import extract_segment_geometry
 from extract_features.fetal_pca_detection import run_fetal_detection
 
-# import list of filenames for the pipeline
-from configs import cow_mlt_seg_dir
-
 # import image modality
 from configs import modality
 
 # import directories
 from configs import cow_mlt_seg_dir, media_dir
-
-# import voreen workspace dirs/files
 from configs import voreen_tool_path
 
 # import pipeline bool args
@@ -329,8 +324,8 @@ if __name__ == "__main__":
     
     # get list of input files
     cow_seg_files = os.listdir(cow_mlt_seg_dir)
-    cow_seg_files.sort()  
-    
+    cow_seg_files.sort() 
+
     logger.info(f'\nProcessing {len(cow_seg_files)} cases...')
     logger.debug(f'Cases: {cow_seg_files}')
 
