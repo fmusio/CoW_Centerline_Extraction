@@ -2,7 +2,7 @@ import os
 
 ################## Directories ##################
 # contains the original CoW multiclass masks
-cow_mlt_seg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media') 
+cow_mlt_seg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media/cow_mlt_seg') 
 
 # folder where all the algorithm outputs are stored. Take the parent directory of cow_mlt_seg_dir
 media_dir = os.path.dirname(cow_mlt_seg_dir)
