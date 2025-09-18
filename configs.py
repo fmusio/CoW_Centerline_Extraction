@@ -1,22 +1,29 @@
 import os
 
 ################## Directories ##################
-# Automatically determine the project root directory
-cow_mlt_seg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media/topcow_preds/UZH/cow_mlt_seg') # contains the original CoW multiclass masks
-voreen_tool_path = "/home/fmusio/projects/voreen-src-unix-nightly/build/bin" # path to voreen tool binaries
+# contains the original CoW multiclass masks
+cow_mlt_seg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media') 
 
-nnunet_results = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'predict_skeleton/nnUNet_results') # folder containing model weights for nnUNet prediction
+# folder where all the algorithm outputs are stored. Take the parent directory of cow_mlt_seg_dir
+media_dir = os.path.dirname(cow_mlt_seg_dir)
+
+# path to voreen tool binaries
+voreen_tool_path = "/home/fmusio/projects/voreen-src-unix-nightly/build/bin" 
+
+# folder containing model weights for nnUNet prediction
+nnunet_results = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'predict_skeleton/nnUNet_results') 
+
 # export the nnUNet_results path as an environment variable
 os.environ["nnUNet_results"] = nnunet_results
 
 ################## Modality ##################
-modality = 'ct' # 'ct' or 'mr'
+modality = 'mr' # 'ct' or 'mr'
 
 ################## Main Pipeline ##################
 # Bool args for main pipeline
 # Set to True to run the corresponding step
-crop_and_resample_mlt_mask = False
-do_nnunet_prediction = False
+crop_and_resample_mlt_mask = True
+do_nnunet_prediction = True
 connect_skeleton = True
 extract_graph = True
 postprocess_graph = True

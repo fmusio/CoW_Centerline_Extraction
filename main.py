@@ -23,7 +23,7 @@ from configs import cow_mlt_seg_dir
 from configs import modality
 
 # import directories
-from configs import cow_mlt_seg_dir
+from configs import cow_mlt_seg_dir, media_dir
 
 # import voreen workspace dirs/files
 from configs import voreen_tool_path
@@ -41,12 +41,11 @@ from configs import fetal_percentile, fetal_factor
 
 
 ################## Directories ##################
-work_dir = os.path.dirname(os.path.abspath(__file__))  # Gets the directory where this main.py file is located
+# Gets the directory where this main.py file is located
+work_dir = os.path.dirname(os.path.abspath(__file__))  
 
-# folder where all the algorithm outputs are stored
-media_dir = os.path.join(work_dir, 'media/topcow_preds/UZH/') 
-if not os.path.exists(media_dir):
-    os.makedirs(media_dir)
+# create media_dir if it doesn't exist
+os.makedirs(media_dir, exist_ok=True)  
 
 # define all the other directories
 mlt_mask_dir = os.path.join(media_dir, 'mlt_mask_resampled')  # contains resampled and cropped mlt masks (with trailing _0000)
@@ -330,9 +329,8 @@ if __name__ == "__main__":
     
     # get list of input files
     cow_seg_files = os.listdir(cow_mlt_seg_dir)
-    cow_seg_files.sort()  # sort files to ensure consistent order
-    ids = ['ct_180']
-    cow_seg_files = [f for f in cow_seg_files if '_ct_' in f]
+    cow_seg_files.sort()  
+    
     logger.info(f'\nProcessing {len(cow_seg_files)} cases...')
     logger.debug(f'Cases: {cow_seg_files}')
 
