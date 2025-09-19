@@ -119,6 +119,7 @@ The pipeline can be configured using the configs.py file.
 
 You have to specify the following paths:
 - *cow_mlt_seg_dir*: path to the directory containing your input masks 
+- *media_dir*: directory where all the algorithm outputs are stored.
 - *voreen_tool_path*: path to voreen tool binaries
 - *nnunet_results*: path to the nnUNet model weights (see below)
 
