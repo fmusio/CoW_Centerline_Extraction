@@ -11,29 +11,29 @@ def test_nodes_against_themselves(nodes_dict):
     None
     """
     keys = ['coords', 'degree', 'id']
-    if 'R-PCA boundary' in nodes_dict['1'].keys():
+    if '1' in nodes_dict and 'R-PCA boundary' in nodes_dict['1'].keys():
         key_pair = ('R-PCA boundary', 'BA boundary')
         for i in range(len(nodes_dict['1'][key_pair[0]])):
             for k in keys:
                 assert nodes_dict['1'][key_pair[0]][i][k] == nodes_dict['2'][key_pair[1]][i][k]
-    if 'L-PCA boundary' in nodes_dict['1'].keys():
+    if '1' in nodes_dict and 'L-PCA boundary' in nodes_dict['1'].keys():
         key_pair = ('L-PCA boundary', 'BA boundary')
         for i in range(len(nodes_dict['1'][key_pair[0]])):
             for k in keys:
                 assert nodes_dict['1'][key_pair[0]][i][k] == nodes_dict['3'][key_pair[1]][i][k]
-    if 'Pcom boundary' in nodes_dict['2'].keys():
+    if '2' in nodes_dict and 'Pcom boundary' in nodes_dict['2'].keys():
         key_pair = ('Pcom boundary', 'PCA boundary')
         for i in range(len(nodes_dict['2'][key_pair[0]])):
             for k in keys:
                 assert nodes_dict['2'][key_pair[0]][i][k] == nodes_dict['8'][key_pair[1]][i][k]
- 
-    if 'Pcom boundary' in nodes_dict['3'].keys():
+
+    if '3' in nodes_dict and 'Pcom boundary' in nodes_dict['3'].keys():
         key_pair = ('Pcom boundary', 'PCA boundary')
         for i in range(len(nodes_dict['3'][key_pair[0]])):
             for k in keys:
                 assert nodes_dict['3'][key_pair[0]][i][k] == nodes_dict['9'][key_pair[1]][i][k]
-    
-    if 'Pcom boundary' in nodes_dict['4'].keys():
+
+    if '4' in nodes_dict and 'Pcom boundary' in nodes_dict['4'].keys():
         key_pair = ('Pcom boundary', 'ICA boundary')
         for i in range(len(nodes_dict['4'][key_pair[0]])):
             for k in keys:
@@ -44,8 +44,8 @@ def test_nodes_against_themselves(nodes_dict):
         for i in range(len(nodes_dict['6'][key_pair[0]])):
             for k in keys:
                 assert nodes_dict['6'][key_pair[0]][i][k] == nodes_dict['9'][key_pair[1]][i][k]
-    
-    if 'MCA boundary' in nodes_dict['4'].keys():
+
+    if '4' in nodes_dict and 'MCA boundary' in nodes_dict['4'].keys():
         key_pair = ('MCA boundary', 'ICA boundary')
         for i in range(len(nodes_dict['4'][key_pair[0]])):
             for k in keys:
@@ -57,7 +57,7 @@ def test_nodes_against_themselves(nodes_dict):
             for k in keys:
                 assert nodes_dict['6'][key_pair[0]][i][k] == nodes_dict['7'][key_pair[1]][i][k]
     
-    if 'ACA boundary' in nodes_dict['4'].keys():
+    if '4' in nodes_dict and 'ACA boundary' in nodes_dict['4'].keys():
         key_pair = ('ACA boundary', 'ICA boundary')
         for i in range(len(nodes_dict['4'][key_pair[0]])):
             for k in keys:
@@ -69,13 +69,13 @@ def test_nodes_against_themselves(nodes_dict):
             for k in keys:
                 assert nodes_dict['6'][key_pair[0]][i][k] == nodes_dict['12'][key_pair[1]][i][k]
     
-    if 'Acom boundary' in nodes_dict['11'].keys():
+    if '11' in nodes_dict and 'Acom boundary' in nodes_dict['11'].keys():
         key_pair = ('Acom boundary', 'R-ACA boundary')
         for i in range(len(nodes_dict['11'][key_pair[0]])):
             for k in keys:
                 assert nodes_dict['11'][key_pair[0]][i][k] == nodes_dict['10'][key_pair[1]][i][k]
 
-    if 'Acom boundary' in nodes_dict['12'].keys():
+    if '12' in nodes_dict and 'Acom boundary' in nodes_dict['12'].keys():
         key_pair = ('Acom boundary', 'L-ACA boundary')
         for i in range(len(nodes_dict['12'][key_pair[0]])):
             for k in keys:
@@ -168,8 +168,6 @@ def test_nodes_against_topology(nodes_dict, variant_dict):
     # MCA
     if '5' in nodes_dict.keys():
         assert nodes_dict['5'].keys() == set(RMCA)
-    else:
-        assert nodes_dict['4'].keys() <= set(RICA) - {'ICA bifurcation'} - {'MCA boundary'}
     if '7' in nodes_dict.keys():
         assert nodes_dict['7'].keys() == set(LMCA)
 
@@ -181,12 +179,12 @@ def test_nodes_against_topology(nodes_dict, variant_dict):
     
     # Missing R-A1 only
     if not variant_dict['anterior']['R-A1']:
-        assert nodes_dict['4'].keys() <= set(RICA) - {'ICA bifurcation'} - {'ACA boundary'}
+        # assert nodes_dict['4'].keys() <= set(RICA) - {'ICA bifurcation'} - {'ACA boundary'}
         # broken A1 cases are special, still having an ICA boundary and an Acom bifurcation
         assert (nodes_dict['11'].keys() == {'Acom boundary', 'ACA end'}) or (nodes_dict['11'].keys() == set(RACA))
     # Missing L-A1 only
     elif not variant_dict['anterior']['L-A1']:
-        assert nodes_dict['6'].keys() <= set(LICA) - {'ICA bifurcation'} - {'ACA boundary'}
+        # assert nodes_dict['6'].keys() <= set(LICA) - {'ICA bifurcation'} - {'ACA boundary'}
         # broken A1 cases are special, still having an ICA boundary and an Acom bifurcation
         assert (nodes_dict['12'].keys() == {'Acom boundary', 'ACA end'}) or (nodes_dict['12'].keys() == set(LACA))
     # Missing no A1

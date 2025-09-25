@@ -262,7 +262,7 @@ def extract_segments(nodes_dict, variant_dict, polydata):
         RACA_dict = nodes_dict['11']
         ra2_end = RACA_dict['ACA end'][0]['id']
         # NOTE: if MCA is missing, we smooth ICA and ACA as single segment
-        if '5' in nodes_dict:
+        if ('5' in nodes_dict and '4' in nodes_dict) or ('4' not in nodes_dict):
             if 'ICA boundary' in RACA_dict and anterior_top['R-A1'] and 'ICA bifurcation' in RICA_dict:
                 segments['R-ACA'] = [(RICA_dict['ICA bifurcation'][0]['id'], ra2_end, [4, 11])]
             elif 'ICA boundary' in RACA_dict and anterior_top['R-A1']:
@@ -281,7 +281,7 @@ def extract_segments(nodes_dict, variant_dict, polydata):
         LACA_dict = nodes_dict['12']
         la2_end = LACA_dict['ACA end'][0]['id']
         # NOTE: if MCA is missing, we smooth ICA and ACA as single segment
-        if '7' in nodes_dict:
+        if '7' in nodes_dict and '6' in nodes_dict:
             if 'ICA boundary' in LACA_dict and anterior_top['L-A1'] and 'ICA bifurcation' in LICA_dict:
                 segments['L-ACA'] = [(LICA_dict['ICA bifurcation'][0]['id'], la2_end, [6, 12])]
             elif 'ICA boundary' in LACA_dict and anterior_top['L-A1']:

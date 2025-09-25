@@ -813,8 +813,10 @@ def get_ica_mca_nodes(polydata, variant_dict):
         if len(mca_end) > 0:
             nodes_dict[str(mca_label)]['MCA end'] = mca_end
         
-        logger.debug(f'\tICA nodes dict: {nodes_dict[str(ica_label)]}')
-        logger.debug(f'\tMCA nodes dict: {nodes_dict[str(mca_label)]}')
+        if ica_label in nodes_dict:
+            logger.debug(f'\tICA nodes dict: {nodes_dict[str(ica_label)]}')
+        if mca_label in nodes_dict:
+            logger.debug(f'\tMCA nodes dict: {nodes_dict[str(mca_label)]}')
 
     return nodes_dict
 
