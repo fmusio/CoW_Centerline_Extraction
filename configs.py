@@ -2,7 +2,7 @@ import os
 
 ################## Directories ##################
 # contains the original CoW multiclass masks
-cow_mlt_seg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media/magic_preds/mr_first_ensemble_top3/cow_mlt_seg') 
+cow_mlt_seg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media/cow_mlt_seg') 
 
 # folder where all the algorithm outputs are stored. Take the parent directory of cow_mlt_seg_dir
 media_dir = os.path.dirname(cow_mlt_seg_dir)
@@ -38,7 +38,7 @@ threshold_for_component_removal = 15 # threshold for removing small disconnected
 max_path_length_mask = None # maximum path length for connecting segments in the mask (after resampling)
 
 ### Args Step 3: Connect skeleton
-max_path_length = 30 # maximum path length for connecting skeletons
+max_path_length = 25 # maximum path length for connecting skeletons
 remove_floating_segments = True # whether to remove floating segments (after connecting skeleton)
 n_jobs = 12 # number of jobs for parallel processing
 
