@@ -633,12 +633,9 @@ def cross_section_analysis(centerline, nii_mask, node_dict, n_jobs=12, use_meanp
                         elif len(valid_neighbors) == 1:
                             result_values[j] = valid_neighbors[0]
                         else:
-                            raise ValueError(
-                                f"No valid neighbors found for cell {i} with label {current_label}. "
-                                "Cannot interpolate NaN value."
-                            )
                             # No valid neighbors with the same label
-                            result_values[j] = 0.0  # Default value when no valid neighbors found
+                            # Keep NaN value as is
+                            pass
             
             results[i] = tuple(result_values)
 
