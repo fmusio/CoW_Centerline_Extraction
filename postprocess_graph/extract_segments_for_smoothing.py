@@ -187,7 +187,7 @@ def extract_segments(nodes_dict, variant_dict, polydata):
             rica_start = RICA_dict['ICA start'][0]['id']
             rica_labels = [4]
         else:
-            rica_start = RPCA_dict['Pcom bounary'][0]['id']
+            rica_start = RPCA_dict['Pcom bifurcation'][0]['id']
             rica_labels = [2, 4, 8]
         if 'ICA bifurcation' in RICA_dict:
             segments['R-ICA'] = [(rica_start, RICA_dict['ICA bifurcation'][0]['id'], rica_labels)]
@@ -218,7 +218,7 @@ def extract_segments(nodes_dict, variant_dict, polydata):
             lica_start = LICA_dict['ICA start'][0]['id']
             lica_labels = [6]
         else:
-            lica_start = LPCA_dict['Pcom boundary'][0]['id']
+            lica_start = LPCA_dict['Pcom bifurcation'][0]['id']
             lica_labels = [3, 6, 9]
         if 'ICA bifurcation' in LICA_dict:
             segments['L-ICA'] = [(lica_start, LICA_dict['ICA bifurcation'][0]['id'], lica_labels)]

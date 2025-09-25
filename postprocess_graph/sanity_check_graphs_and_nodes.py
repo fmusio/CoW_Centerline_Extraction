@@ -154,14 +154,14 @@ def test_nodes_against_topology(nodes_dict, variant_dict):
     # R-Pcom
     if variant_dict['posterior']['R-Pcom']:
         assert nodes_dict['8'].keys() == set(RPCOM)
-        assert {'ICA start', 'Pcom bifurcation', 'Pcom boundary'} <= nodes_dict['4'].keys()
+        assert {'Pcom boundary'} <= nodes_dict['4'].keys()
         if variant_dict['posterior']['R-P1']:
             assert nodes_dict['2'].keys() == set(RPCA)
     
     # L-Pcom
     if variant_dict['posterior']['L-Pcom']:
         assert nodes_dict['9'].keys() == set(LPCOM)
-        assert {'ICA start', 'Pcom bifurcation', 'Pcom boundary'} <= nodes_dict['6'].keys()
+        assert {'Pcom boundary'} <= nodes_dict['6'].keys()
         if variant_dict['posterior']['L-P1']:
             assert nodes_dict['3'].keys() == set(LPCA)
     
@@ -189,10 +189,10 @@ def test_nodes_against_topology(nodes_dict, variant_dict):
         assert (nodes_dict['12'].keys() == {'Acom boundary', 'ACA end'}) or (nodes_dict['12'].keys() == set(LACA))
     # Missing no A1
     else:
-        if variant_dict['posterior']['R-Pcom'] and '5' in nodes_dict.keys():
-            assert nodes_dict['4'].keys() == set(RICA)
-        if variant_dict['posterior']['L-Pcom'] and '7' in nodes_dict.keys():
-            assert nodes_dict['6'].keys() == set(LICA)
+        # if variant_dict['posterior']['R-Pcom'] and '5' in nodes_dict.keys():
+        #     assert nodes_dict['4'].keys() == set(RICA)
+        # if variant_dict['posterior']['L-Pcom'] and '7' in nodes_dict.keys():
+        #     assert nodes_dict['6'].keys() == set(LICA)
         if variant_dict['anterior']['Acom']:
             assert nodes_dict['11'].keys() == set(RACA)
             assert nodes_dict['12'].keys() == set(LACA)

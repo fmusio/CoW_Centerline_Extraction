@@ -698,21 +698,30 @@ def get_ica_mca_nodes(polydata, variant_dict):
                         assert len(ica_aca_boundary) == 1, 'Wrong number of ICA/ACA boundaries!'
                         ica_boundary_aca = get_node_dict_entry(ica_aca_boundary[0], 2, ica_label, polydata)
                         logger.debug(f'\tICA 3-nodes: {ica_nodes_3}')
-                        assert len(ica_nodes_3) == 2, 'Wrong number of ICA 3-nodes!' # Too restrictive?
-                        # Pcom bifurcation is closest 3-node to Pcom boundary
-                        pcom_bif_id, _ = find_closest_node_to_point(ica_nodes_3, ica_pcom_boundary[0], ica_label, polydata)
-                        pcom_bif_node = get_node_dict_entry(pcom_bif_id, 3, ica_label, polydata)
-                        logger.debug(f'\tPcom bifurcation: {pcom_bif_node}')
-                        ica_nodes_3.remove(pcom_bif_id)
-                        ica_bif_node = get_node_dict_entry(ica_nodes_3[0], 3, ica_label, polydata)
-                        logger.debug(f'\tICA bifurcation: {ica_bif_node}')
-                        assert len(ica_nodes_1) == 4, 'Wrong number of ICA 1-nodes!'
-                        ica_nodes_1.remove(ica_aca_boundary[0])
-                        ica_nodes_1.remove(ica_mca_boundary[0])
-                        ica_nodes_1.remove(ica_pcom_boundary[0])
-                        ica_start = get_node_dict_entry(ica_nodes_1[0], 1, ica_label, polydata)
-                        logger.debug(f'\tICA start: {ica_start}')
-                    
+                        if len(ica_nodes_3) == 2:
+                            # Pcom bifurcation is closest 3-node to Pcom boundary
+                            pcom_bif_id, _ = find_closest_node_to_point(ica_nodes_3, ica_pcom_boundary[0], ica_label, polydata)
+                            pcom_bif_node = get_node_dict_entry(pcom_bif_id, 3, ica_label, polydata)
+                            logger.debug(f'\tPcom bifurcation: {pcom_bif_node}')
+                            ica_nodes_3.remove(pcom_bif_id)
+                            ica_bif_node = get_node_dict_entry(ica_nodes_3[0], 3, ica_label, polydata)
+                            logger.debug(f'\tICA bifurcation: {ica_bif_node}')
+                            assert len(ica_nodes_1) == 4, 'Wrong number of ICA 1-nodes!'
+                            ica_nodes_1.remove(ica_aca_boundary[0])
+                            ica_nodes_1.remove(ica_mca_boundary[0])
+                            ica_nodes_1.remove(ica_pcom_boundary[0])
+                            ica_start = get_node_dict_entry(ica_nodes_1[0], 1, ica_label, polydata)
+                            logger.debug(f'\tICA start: {ica_start}')
+                        elif len(ica_nodes_3) == 1:
+                            logger.warning(f'\tALERT: Only 1 ICA 3-node present with A1, MCA and Pcom! Missing Pcom bif?')
+                            path1 = find_shortest_path(ica_nodes_3[0], ica_aca_boundary[0], polydata, [ica_label])['path']
+                            path2 = find_shortest_path(ica_nodes_3[0], ica_mca_boundary[0], polydata, [ica_label])['path']
+                            assert len(path1) < 9 and len(path2) < 11, 'ICA bif too far away from boundaries?!' 
+                            ica_bif_node = get_node_dict_entry(ica_nodes_3[0], 3, ica_label, polydata)
+                            logger.debug(f'\tICA bifurcation: {ica_bif_node}')
+                        else:
+                            logger.warning(f'\tALERT: Too many ICA 3-nodes present with A1, MCA and Pcom!?! {ica_nodes_3}')
+                            raise ValueError('Too many ICA 3-nodes present with A1, MCA and Pcom?!')
                     # No A1, MCA and Pcom present
                     else:
                         logger.debug('\tNo A1 present.')
