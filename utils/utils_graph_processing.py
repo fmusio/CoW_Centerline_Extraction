@@ -340,7 +340,7 @@ def get_degree_lookup_table(polydata):
     degree_lookup_table: dict, dictionary with point IDs as keys and degrees as values
     """
     edge_list, _ = get_edge_list(polydata)
-    all_point_ids = list(set([edge[0] for edge in edge_list] + [edge[1] for edge in edge_list]))
+    all_point_ids = [edge[0] for edge in edge_list] + [edge[1] for edge in edge_list]
     
     degree_lookup_table = {}
     for point in all_point_ids:
