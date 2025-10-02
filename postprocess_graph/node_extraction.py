@@ -1060,7 +1060,10 @@ def get_aca_acom_nodes(polydata, variant_dict):
             assert len(aca_acom_boundary) == 1, 'Wrong number of ACA/Acom boundaries!'
             aca_boundary_acom = get_node_dict_entry(aca_acom_boundary[0], 2, aca_label, polydata)
             acom_boundary_aca = get_node_dict_entry(aca_acom_boundary[0], 2, acom_label, polydata)
-            aca_nodes_1.remove(aca_acom_boundary[0])
+            try:
+                aca_nodes_1.remove(aca_acom_boundary[0])
+            except ValueError:
+                logger.debug('\tACA/Acom boundary not in ACA 1-nodes. Might be a 3-node then.')
             # Either ACA end is branching point or broken but present A1
             if len(aca_nodes_1) == 2:
                 if len(aca_acom_nodes_3) == 1:
