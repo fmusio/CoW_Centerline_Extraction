@@ -895,8 +895,11 @@ def check_for_small_loops(polydata, labels, max_length=10):
                         all_paths_combined += p['path']
                     if len(list(set(all_paths_combined))) == len(all_paths_combined):
                         other_nodes = copy.deepcopy(higher_nodes)
-                        other_nodes.remove(nd1)
-                        other_nodes.remove(nd2)
+                        try:
+                            other_nodes.remove(nd1)
+                            other_nodes.remove(nd2)
+                        except ValueError:
+                            continue
                         loop_paths = []
                         for p in paths:
                             path = p['path']
