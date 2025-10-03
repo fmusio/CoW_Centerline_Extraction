@@ -82,7 +82,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
     for segment_name in segments:
         logger.info(f'...segment {segment_name}')
         segment = segments[segment_name]
-        if len(segment) == 1:
+        if segment is not None and len(segment) == 1:
             start_node, end_node, label = segment[0]
             # Find all paths
             paths = find_all_paths(start_node, end_node, polydata, label)
@@ -202,7 +202,7 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
                         list_geom_dicts.append(get_dict_entry(segment[0], path_radius, path_geometry, nan_edges=nan_edges))
                     geometry_dict[segment_name] = list_geom_dicts
 
-        if len(segment) > 1:
+        elif segment is not None and len(segment) > 1:
             logger.warning(f'\tALERT: Multiple segments found for {segment_name}!')
             list_geom_dicts = []
             for tpl in segment:

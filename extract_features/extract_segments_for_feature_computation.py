@@ -374,7 +374,10 @@ def get_consistent_segments(segments, polydata, nodes_dict, modality='ct', media
             # Cap A2 at 10mm
             segments[f'{side}A2'] = [(segments[f'{side}A1'][0][1], segments[f'{side}ACA'][0][1], segments[f'{side}ACA'][0][2])]
             segments[f'{side}A2'] = cap_segment_at_length(segments[f'{side}A2'], polydata, length_cap=margin_from_cow)
-            segments[f'{side}ACA'] = [(segments[f'{side}ACA'][0][0], segments[f'{side}A2'][0][1], segments[f'{side}ACA'][0][2])]
+            if segments[f'{side}A2'] is not None:
+                segments[f'{side}ACA'] = [(segments[f'{side}ACA'][0][0], segments[f'{side}A2'][0][1], segments[f'{side}ACA'][0][2])]
+            else: 
+                segments[f'{side}ACA'] = [(segments[f'{side}ACA'][0][0], segments[f'{side}ACA'][0][1], segments[f'{side}ACA'][0][2])]
         else:
             raise NotImplementedError
         
