@@ -1068,7 +1068,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
             if len(aca_nodes_1) == 2:
                 if len(aca_acom_nodes_3) == 1:
                     acom_bif_id, min_dist = find_closest_node_to_point(aca_acom_nodes_3, aca_acom_boundary[0], aca_label, polydata)
-                    if min_dist < 6: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
+                    if min_dist < 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
                         path = find_shortest_path(aca_nodes_1[0], aca_nodes_1[1], polydata, [aca_label])['path']
                         if assert_node_on_path(acom_bif_id, path):
                             logger.warning('\tALERT: A1 broken but present?!')
@@ -1088,7 +1088,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
                 assert len(aca_nodes_3) == 2, 'Wrong number of ACA 3-nodes!'
                 acom_bif_id, min_dist = find_closest_node_to_point(aca_nodes_3, aca_acom_boundary[0], aca_label, polydata)
                 aca_nodes_3.remove(acom_bif_id)
-                if min_dist < 6: # NOTE: This is a hard-coded value! Might
+                if min_dist < 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
                     aca_end = get_node_dict_entry(aca_nodes_3[0], 3, aca_label, polydata)
                     acom_bif_node = get_node_dict_entry(acom_bif_id, 3, aca_label, polydata) 
                     path0 = find_shortest_path(aca_nodes_1[0], acom_bif_id, polydata, [aca_label])['path']
