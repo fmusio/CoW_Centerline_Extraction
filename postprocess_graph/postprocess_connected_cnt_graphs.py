@@ -645,19 +645,34 @@ def relabel_short_acom(nodes_dict, polydata):
             r_aca_boundary_ids = [n['id'] for n in nodes_dict['11']['Acom boundary']]
             l_acom_bif_ids = [n['id'] for n in nodes_dict['12']['Acom bifurcation']]
             l_aca_boundary_ids = [n['id'] for n in nodes_dict['12']['Acom boundary']]
+            r_index, l_index = 0, 1
             _, r_dist = find_closest_node_to_point(r_acom_bif_ids, component[0], [11, 10], polydata)
-            _, l_dist = find_closest_node_to_point(l_acom_bif_ids, component[0], [12, 10], polydata)
-            if r_dist < l_dist and l_dist > 1:
-                cell_id = get_cellId_for_edge((component[1], component[1]+1), polydata)
-                polydata = set_label(10, cell_id, polydata)
-                nodes_dict['12']['Acom boundary'][l_aca_boundary_ids.index(component[1])] = get_node_dict_entry(component[1]+1, 2, 12, polydata)[0]
-                nodes_dict['10']['L-ACA boundary'][l_aca_boundary_ids.index(component[1])] = get_node_dict_entry(component[1]+1, 2, 10, polydata)[0]
-            elif l_dist < r_dist and r_dist > 1:
-                cell_id = get_cellId_for_edge((component[0], component[0]-1), polydata)
-                polydata = set_label(10, cell_id, polydata)
-                nodes_dict['11']['Acom boundary'][r_aca_boundary_ids.index(component[0])] = get_node_dict_entry(component[0]-1, 2, 11, polydata)[0]
-                nodes_dict['10']['R-ACA boundary'][r_aca_boundary_ids.index(component[0])] = get_node_dict_entry(component[0]-1, 2, 10, polydata)[0]
-    
+            _, r_dist_2 = find_closest_node_to_point(r_acom_bif_ids, component[1], [11, 10], polydata)
+            if r_dist_2 < r_dist:
+                r_index, l_index = 1, 0
+                r_dist = r_dist_2
+            _, l_dist = find_closest_node_to_point(l_acom_bif_ids, component[l_index], [12, 10], polydata)
+            if r_dist < l_dist and l_dist > 0:
+                cell_id = get_cellId_for_edge((component[l_index], component[l_index]+1), polydata)
+                new_id = component[l_index]+1
+                if cell_id is None:
+                    cell_id = get_cellId_for_edge((component[l_index], l_acom_bif_ids[0]), polydata)
+                    new_id = l_acom_bif_ids[0]
+                if cell_id is not None:
+                    polydata = set_label(10, cell_id, polydata)
+                    nodes_dict['12']['Acom boundary'][l_aca_boundary_ids.index(component[l_index])] = get_node_dict_entry(new_id, 2, 12, polydata)[0]
+                    nodes_dict['10']['L-ACA boundary'][l_aca_boundary_ids.index(component[l_index])] = get_node_dict_entry(new_id, 2, 10, polydata)[0]
+            elif l_dist < r_dist and r_dist > 0:
+                cell_id = get_cellId_for_edge((component[r_index], component[r_index]-1), polydata)
+                new_id = component[r_index]-1
+                if cell_id is None:
+                    cell_id = get_cellId_for_edge((component[r_index], r_acom_bif_ids[0]), polydata)
+                    new_id = r_acom_bif_ids[0]
+                if cell_id is not None:
+                    polydata = set_label(10, cell_id, polydata)
+                    nodes_dict['11']['Acom boundary'][r_aca_boundary_ids.index(component[r_index])] = get_node_dict_entry(new_id, 2, 11, polydata)[0]
+                    nodes_dict['10']['R-ACA boundary'][r_aca_boundary_ids.index(component[r_index])] = get_node_dict_entry(new_id, 2, 10, polydata)[0]
+
     return polydata, nodes_dict
         
 
