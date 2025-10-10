@@ -1055,7 +1055,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
             logger.debug('\tNo A1 present.')
             aca_acom_boundary = find_boundary_points(aca_label, acom_label, polydata)
             logger.debug(f'\tACA/Acom boundary points: {aca_acom_boundary}')
-            assert a2_label not in labels_array # never seen 3rd-A2 without A1
+            # assert a2_label not in labels_array # never seen 3rd-A2 without A1
             if variant_dict['anterior']['Acom'] == True and acom_label in labels_array:
                 assert len(aca_acom_boundary) == 1, 'Wrong number of ACA/Acom boundaries!'
                 aca_boundary_acom = get_node_dict_entry(aca_acom_boundary[0], 2, aca_label, polydata)
