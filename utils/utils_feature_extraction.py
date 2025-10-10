@@ -773,30 +773,48 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
             stop_parent = True
             if len(radii_parent) == 0:
                 cellId_parent = get_cellId_for_edge((pointId_parent-i, pointId_parent-i+1), polydata)
-                radii_parent.append(avg_radii.GetValue(cellId_parent))
+                try:
+                    radii_parent.append(avg_radii.GetValue(cellId_parent))
+                except TypeError:
+                    radii_parent.append(np.nan)
         else:
             cellId_parent = get_cellId_for_edge((pointId_parent-1-i, pointId_parent-i), polydata)
-            radii_parent.append(avg_radii.GetValue(cellId_parent))
+            try:
+                radii_parent.append(avg_radii.GetValue(cellId_parent))
+            except TypeError:
+                radii_parent.append(np.nan)
         if stop_child1:
             pass
         elif start_parent == pointId_child1 + i:
             stop_child1 = True
             if len(radii_child1) == 0:
                 cellId_child1 = get_cellId_for_edge((pointId_child1+i, pointId_child1+1+i), polydata)
-                radii_child1.append(avg_radii.GetValue(cellId_child1))
+                try:
+                    radii_child1.append(avg_radii.GetValue(cellId_child1))
+                except TypeError:
+                    radii_child1.append(np.nan)
         else:
             cellId_child1 = get_cellId_for_edge((pointId_child1+i, pointId_child1+i+1), polydata)
-            radii_child1.append(avg_radii.GetValue(cellId_child1))
+            try:
+                radii_child1.append(avg_radii.GetValue(cellId_child1))
+            except TypeError:
+                radii_child1.append(np.nan)
         if stop_child2:
             pass
         elif start_parent == pointId_child2 + i:
             stop_child2 = True
             if len(radii_child2) == 0:    
                 cellId_child2 = get_cellId_for_edge((pointId_child2+i, pointId_child2+1+i), polydata)
-                radii_child2.append(avg_radii.GetValue(cellId_child2))
+                try:
+                    radii_child2.append(avg_radii.GetValue(cellId_child2))
+                except TypeError:
+                    radii_child2.append(np.nan)
         else:
             cellId_child2 = get_cellId_for_edge((pointId_child2+i, pointId_child2+i+1), polydata)
-            radii_child2.append(avg_radii.GetValue(cellId_child2))
+            try:
+                radii_child2.append(avg_radii.GetValue(cellId_child2))
+            except TypeError:
+                radii_child2.append(np.nan)
 
     radius_parent = np.mean(radii_parent)
     radius_child1 = np.mean(radii_child1)
