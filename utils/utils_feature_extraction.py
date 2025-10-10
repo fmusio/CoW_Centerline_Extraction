@@ -734,7 +734,7 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
     pointId_child1: int, id of the first child vessel point
     pointId_child2: int, id of the second child vessel point
     polydata: vtkPolyData, polydata of the vessel
-    radius_attribute (str): Attribute name for radius, ('ce_radius', 'avg_radius', 'min_radius', 'max_radius')
+    radius_attribute (str): Attribute name for radius, ('ce_radius', 'mis_radius')
     nr_of_edges_for_avg: int, number of edges to average for radius computation
     start_parent: int, start point for parent vessel
     end_child1: int, end point for first child vessel
@@ -760,14 +760,17 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
         if end_child2 is not None:
             max_dist.append(end_child2 - pointId_child2)
         # remove negative values
-        max_dist = [d for d in max_dist if d > 0]
-        nr_of_edges_for_avg = min(max_dist)
+        # max_dist = [d for d in max_dist if d > 0]
+        # nr_of_edges_for_avg = min(max_dist)
     
     stop_parent = False
     stop_child1 = False
     stop_child2 = False
+    dist_threshold_for_rad_computation = 2*nr_of_edges_for_avg
     for i in range(nr_of_edges_for_avg):
-        if stop_parent:
+        if max_dist[1] < dist_threshold_for_rad_computation:
+            radii_parent.append(np.nan)
+        elif stop_parent:
             pass
         elif start_parent == pointId_parent - i:
             stop_parent = True
@@ -783,7 +786,10 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
                 radii_parent.append(avg_radii.GetValue(cellId_parent))
             except TypeError:
                 radii_parent.append(np.nan)
-        if stop_child1:
+        
+        if max_dist[2] < dist_threshold_for_rad_computation:
+            radii_child1.append(np.nan)
+        elif stop_child1:
             pass
         elif start_parent == pointId_child1 + i:
             stop_child1 = True
@@ -799,7 +805,10 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
                 radii_child1.append(avg_radii.GetValue(cellId_child1))
             except TypeError:
                 radii_child1.append(np.nan)
-        if stop_child2:
+        
+        if max_dist[3] < dist_threshold_for_rad_computation:
+            radii_child2.append(np.nan)
+        elif stop_child2:
             pass
         elif start_parent == pointId_child2 + i:
             stop_child2 = True
