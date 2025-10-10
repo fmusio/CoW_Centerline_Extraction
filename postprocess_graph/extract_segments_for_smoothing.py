@@ -276,7 +276,6 @@ def extract_segments(nodes_dict, variant_dict, polydata):
         else: # missing ICA and MCA  
             if 'ICA boundary' in RACA_dict and anterior_top['R-A1']:
                 segments['R-ACA'] = [(RACA_dict['ICA boundary'][0]['id'], ra2_end, [11])]
-                print('ciaaooooooooooooooo', segments['R-ACA'])
         # Add remaining segments after branching point
         add_remaining_segments(11, 'R-ACA', ra2_end, ra2_end, polydata) if 'R-ACA' in segments else None
 
