@@ -1051,55 +1051,77 @@ def get_aca_acom_nodes(polydata, variant_dict):
                 assert acom_label not in labels_array
                 assert len(aca_nodes_4) == 0, 'ACA node of degree 4 present?!'    
         
-        else: # No A1
+        else: # No A1 
             logger.debug('\tNo A1 present.')
             aca_acom_boundary = find_boundary_points(aca_label, acom_label, polydata)
             logger.debug(f'\tACA/Acom boundary points: {aca_acom_boundary}')
             assert a2_label not in labels_array # never seen 3rd-A2 without A1
-            assert variant_dict['anterior']['Acom'] == True and acom_label in labels_array
-            assert len(aca_acom_boundary) == 1, 'Wrong number of ACA/Acom boundaries!'
-            aca_boundary_acom = get_node_dict_entry(aca_acom_boundary[0], 2, aca_label, polydata)
-            acom_boundary_aca = get_node_dict_entry(aca_acom_boundary[0], 2, acom_label, polydata)
-            try:
-                aca_nodes_1.remove(aca_acom_boundary[0])
-            except ValueError:
-                logger.debug('\tACA/Acom boundary not in ACA 1-nodes. Might be a 3-node then.')
-            # Either ACA end is branching point or broken but present A1
-            if len(aca_nodes_1) == 2:
-                if len(aca_acom_nodes_3) == 1:
-                    acom_bif_id, min_dist = find_closest_node_to_point(aca_acom_nodes_3, aca_acom_boundary[0], aca_label, polydata)
+            if variant_dict['anterior']['Acom'] == True and acom_label in labels_array:
+                assert len(aca_acom_boundary) == 1, 'Wrong number of ACA/Acom boundaries!'
+                aca_boundary_acom = get_node_dict_entry(aca_acom_boundary[0], 2, aca_label, polydata)
+                acom_boundary_aca = get_node_dict_entry(aca_acom_boundary[0], 2, acom_label, polydata)
+                try:
+                    aca_nodes_1.remove(aca_acom_boundary[0])
+                except ValueError:
+                    logger.debug('\tACA/Acom boundary not in ACA 1-nodes. Might be a 3-node then.')
+                # Either ACA end is branching point or broken but present A1
+                if len(aca_nodes_1) == 2:
+                    if len(aca_acom_nodes_3) == 1:
+                        acom_bif_id, min_dist = find_closest_node_to_point(aca_acom_nodes_3, aca_acom_boundary[0], aca_label, polydata)
+                        if min_dist < 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
+                            path = find_shortest_path(aca_nodes_1[0], aca_nodes_1[1], polydata, [aca_label])['path']
+                            if assert_node_on_path(acom_bif_id, path):
+                                logger.warning('\tALERT: A1 broken but present?!')
+                                acom_bif_node = get_node_dict_entry(acom_bif_id, 3, aca_label, polydata)
+                                logger.debug(f'\tClosest ACA/Acom 3-node to ACA/Acom boundary is Acom bifurcation: {acom_bif_node}')
+                                # NOTE: If A1 is present but broken, we still label it as missing A1 (functionally, there is still no blood supply)
+                                # variant_dict['anterior'][f'{a1_name}'] = True
+                                z_values = [polydata.GetPoints().GetPoint(aca_nodes_1[0])[2], polydata.GetPoints().GetPoint(aca_nodes_1[1])[2]]
+                                argmax_zvalue = np.argmax(z_values)
+                                aca_end = get_node_dict_entry(aca_nodes_1[argmax_zvalue], 1, aca_label, polydata)
+                                logger.debug(f'\tACA end is 1-node with max z-value: {aca_end}')
+                                aca_boundary_ica = get_node_dict_entry(aca_nodes_1[(argmax_zvalue+1)%2], 1, aca_label, polydata)
+                                logger.debug(f'\tICA boundary is remaining 1-node: {aca_boundary_ica}') 
+                # ACA end is branching point and broken but present A1
+                elif len(aca_nodes_1) == 3:
+                    logger.debug('\tACA end is branching point and broken but present A1.')
+                    assert len(aca_nodes_3) == 2, 'Wrong number of ACA 3-nodes!'
+                    acom_bif_id, min_dist = find_closest_node_to_point(aca_nodes_3, aca_acom_boundary[0], aca_label, polydata)
+                    aca_nodes_3.remove(acom_bif_id)
                     if min_dist < 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
-                        path = find_shortest_path(aca_nodes_1[0], aca_nodes_1[1], polydata, [aca_label])['path']
-                        if assert_node_on_path(acom_bif_id, path):
-                            logger.warning('\tALERT: A1 broken but present?!')
-                            acom_bif_node = get_node_dict_entry(acom_bif_id, 3, aca_label, polydata)
-                            logger.debug(f'\tClosest ACA/Acom 3-node to ACA/Acom boundary is Acom bifurcation: {acom_bif_node}')
-                            # NOTE: If A1 is present but broken, we still label it as missing A1 (functionally, there is still no blood supply)
-                            # variant_dict['anterior'][f'{a1_name}'] = True
-                            z_values = [polydata.GetPoints().GetPoint(aca_nodes_1[0])[2], polydata.GetPoints().GetPoint(aca_nodes_1[1])[2]]
-                            argmax_zvalue = np.argmax(z_values)
-                            aca_end = get_node_dict_entry(aca_nodes_1[argmax_zvalue], 1, aca_label, polydata)
-                            logger.debug(f'\tACA end is 1-node with max z-value: {aca_end}')
-                            aca_boundary_ica = get_node_dict_entry(aca_nodes_1[(argmax_zvalue+1)%2], 1, aca_label, polydata)
-                            logger.debug(f'\tICA boundary is remaining 1-node: {aca_boundary_ica}') 
-            # ACA end is branching point and broken but present A1
-            elif len(aca_nodes_1) == 3:
-                logger.debug('\tACA end is branching point and broken but present A1.')
-                assert len(aca_nodes_3) == 2, 'Wrong number of ACA 3-nodes!'
-                acom_bif_id, min_dist = find_closest_node_to_point(aca_nodes_3, aca_acom_boundary[0], aca_label, polydata)
-                aca_nodes_3.remove(acom_bif_id)
-                if min_dist < 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
-                    aca_end = get_node_dict_entry(aca_nodes_3[0], 3, aca_label, polydata)
-                    acom_bif_node = get_node_dict_entry(acom_bif_id, 3, aca_label, polydata) 
-                    path0 = find_shortest_path(aca_nodes_1[0], acom_bif_id, polydata, [aca_label])['path']
-                    if not assert_node_on_path(aca_nodes_3[0], path0):
-                        aca_boundary_ica = get_node_dict_entry(aca_nodes_1[0], 1, aca_label, polydata)
-                    else:
-                        path1 = find_shortest_path(aca_nodes_1[1], acom_bif_id, polydata, [aca_label])['path']
-                        if not assert_node_on_path(aca_nodes_3[0], path1):
-                            aca_boundary_ica = get_node_dict_entry(aca_nodes_1[1], 1, aca_label, polydata)
+                        aca_end = get_node_dict_entry(aca_nodes_3[0], 3, aca_label, polydata)
+                        acom_bif_node = get_node_dict_entry(acom_bif_id, 3, aca_label, polydata) 
+                        path0 = find_shortest_path(aca_nodes_1[0], acom_bif_id, polydata, [aca_label])['path']
+                        if not assert_node_on_path(aca_nodes_3[0], path0):
+                            aca_boundary_ica = get_node_dict_entry(aca_nodes_1[0], 1, aca_label, polydata)
                         else:
-                            aca_boundary_ica = get_node_dict_entry(aca_nodes_1[2], 1, aca_label, polydata)       
+                            path1 = find_shortest_path(aca_nodes_1[1], acom_bif_id, polydata, [aca_label])['path']
+                            if not assert_node_on_path(aca_nodes_3[0], path1):
+                                aca_boundary_ica = get_node_dict_entry(aca_nodes_1[1], 1, aca_label, polydata)
+                            else:
+                                aca_boundary_ica = get_node_dict_entry(aca_nodes_1[2], 1, aca_label, polydata)   
+            else: # no Acom and missing A1!
+                if ica_label not in labels_array: # rare case of missing ICA:
+                    assert len(aca_nodes_1) >= 2, 'Too few ACA 1-nodes found!'
+                    if len(aca_nodes_1) == 2:
+                        z_values = [polydata.GetPoints().GetPoint(aca_nodes_1[0])[2], polydata.GetPoints().GetPoint(aca_nodes_1[1])[2]]
+                        argmax_zvalue = np.argmax(z_values)
+                        aca_end = get_node_dict_entry(aca_nodes_1[argmax_zvalue], 1, aca_label, polydata)
+                        logger.debug(f'\tACA end is 1-node with max z-value: {aca_end}')
+                        aca_boundary_ica = get_node_dict_entry(aca_nodes_1[(argmax_zvalue+1)%2], 1, aca_label, polydata)
+                        logger.debug(f'\tICA boundary is remaining 1-node: {aca_boundary_ica}')
+                    elif len(aca_nodes_1) == 3:
+                        logger.debug('\tACA end is branching point and missing A1.')
+                        assert len(aca_nodes_3) == 1, 'Wrong number of ACA 3-nodes!'
+                        aca_end = get_node_dict_entry(aca_nodes_3[0], 3, aca_label, polydata)
+                        z_values = [polydata.GetPoints().GetPoint(aca_nodes_1[0])[2], polydata.GetPoints().GetPoint(aca_nodes_1[1])[2], polydata.GetPoints().GetPoint(aca_nodes_1[2])[2]]
+                        argmin_zvalue = np.argmin(z_values)
+                        aca_boundary_ica = get_node_dict_entry(aca_nodes_1[argmin_zvalue], 1, aca_label, polydata)
+                        logger.debug(f'\tICA boundary is 1-node with min z-value: {aca_boundary_ica}')
+                    else:
+                        raise ValueError('Too many ACA 1-nodes found without ICA?!')
+                else:
+                    raise ValueError('ACA without A1 but with ICA?! Not implemented yet!')
 
         # ACA end
         if len(aca_end) == 0:
