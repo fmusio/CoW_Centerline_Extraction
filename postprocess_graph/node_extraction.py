@@ -1206,6 +1206,11 @@ def get_aca_acom_nodes(polydata, variant_dict):
             nodes_dict[str(aca_label)]['Acom boundary'] = aca_boundary_acom
         if len(aca_end) > 0:
             nodes_dict[str(aca_label)]['ACA end'] = aca_end
+
+        # change A1 presence if ICA is missing but ACA has A1
+        if ica_label not in labels_array and 'ICA boundary' in nodes_dict[str(aca_label)]:
+            logger.warning('\tALERT: ACA A1 present but no ICA?! Removing ACA A1 again...')
+            variant_dict['anterior'][a1_name] = True
         
         # Get A1 fenestration
         if len(aca_boundary_ica) > 0:

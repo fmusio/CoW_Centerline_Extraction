@@ -292,6 +292,9 @@ def extract_segments(nodes_dict, variant_dict, polydata):
                 segments['L-ACA'] = [(LACA_dict['ICA boundary'][0]['id'], la2_end, [12])]
             else:
                 segments['Acom'] = [(RACA_dict['Acom bifurcation'][0]['id'], la2_end, [10, 11, 12])]
+        else: # missing ICA and MCA 
+            if 'ICA boundary' in LACA_dict and anterior_top['L-A1']:
+                segments['L-ACA'] = [(LACA_dict['ICA boundary'][0]['id'], la2_end, [12])]
         # Add remaining segments after branching point
         add_remaining_segments(12, 'L-ACA', la2_end, la2_end, polydata) if 'L-ACA' in segments else None
 
