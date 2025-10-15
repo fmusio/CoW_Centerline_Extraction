@@ -33,13 +33,13 @@ extract_features = True
 ### Args Step 1: Cropping, mask correction and resampling
 do_mask_corrections = True # perform mask corrections or not
 # NOTE: For skipping individual mask correction steps, set variables below to None
-min_overall_segment_size = 35 # minimum overall segment size (#voxels) to keep after cropping (before resampling)
+min_overall_segment_size = 30 # minimum overall segment size (#voxels) to keep after cropping (before resampling)
 threshold_for_component_removal = 15 # threshold for removing small disconnected components (#voxels) (before resampling)
 max_path_length_mask = None # maximum path length for connecting segments in the mask (after resampling)
 
 ### Args Step 3: Connect skeleton
 max_path_length = 25 # maximum path length for connecting skeletons
-remove_floating_segments = True # whether to remove floating segments (after connecting skeleton)
+remove_floating_segments = False # whether to remove floating segments (after connecting skeleton)
 n_jobs = 12 # number of jobs for parallel processing
 
 ### Args Step 7: Extract features
