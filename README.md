@@ -126,9 +126,9 @@ You have to specify the following paths:
 Additionally, you must specify the image modality ('ct' or 'mr') and a set of pipeline parameters. Default parameters are provided, so specifying the paths and modality is sufficient to get started.
 
 ### Model weights
-The model weights for skeletonization are available for download on Zenodo: [Insert Zenodo link here]
+The model weights for skeletonization are available for download on Zenodo: [https://zenodo.org/records/17357136](https://zenodo.org/records/17357136)
 
-Download the weights and place them in the folder defined by *nnunet_results*, using the same relative path structure as specified on Zenodo.
+Download the folder, unzip it, and place it in the location specified by *nnUNet_results*. By default, this is the folder *predict_skeleton* within the project directory.
 
 ### Run the pipeline
 Provide at least one multiclass mask in the folder specified by *cow_mlt_seg_dir*, and ensure the model weights are correctly placed. Once everything is set up, simply run the main script without any arguments:
