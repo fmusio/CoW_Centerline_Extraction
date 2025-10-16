@@ -1,11 +1,10 @@
 # CoW Centerline and Feature Extraction
 This repository provides a baseline algorithm for a full quantitative description of the Circle of Willis (CoW). It takes as input a multiclass segmentation mask (as provided by the TopCoW challenge) and outputs a centerline graph and surface mesh, along with derived data including the CoW variant, anatomically relevant nodes, and a rich set of morphometric features.
 
-If you use this algorithm, please cite:
-[Placeholder for arXiv citation]
+We also provide a public centerline dataset derived from the TopCoW training set: [https://zenodo.org/records/17358162](https://zenodo.org/records/17358162).
 
-We also provide a public centerline dataset built upon the TopCoW training set:
-[Placeholder for Zenodo link]
+If you make use of our algorithm or data in your work, please cite our paper:
+> [Musio et al., "Musio et al., “Circle of Willis Centerline Graphs: A Dataset and Baseline Algorithm” (2025)](https://arxiv.org/abs/2510.13720).
 
 <p align="center">
   <img src="https://github.com/fmusio/CoW_Centerline_Extraction/blob/main/figure_example_cnt.png" width="600" />
