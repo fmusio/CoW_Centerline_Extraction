@@ -1,10 +1,10 @@
 # CoW Centerline and Feature Extraction
 This repository provides a baseline algorithm for a full quantitative description of the Circle of Willis (CoW). It takes as input a multiclass segmentation mask (as provided by the TopCoW challenge) and outputs a centerline graph and surface mesh, along with derived data including the CoW variant, anatomically relevant nodes, and a rich set of morphometric features.
 
-We also provide a public centerline dataset derived from the TopCoW training set: [https://zenodo.org/records/17358162](https://zenodo.org/records/17358162).
+The centerline data used to develop this algorithm is publicly available on Zenodo: [https://zenodo.org/records/17358162](https://zenodo.org/records/17358162).
 
 If you make use of our algorithm or data in your work, please cite our paper:
-> [Musio et al., "Musio et al., “Circle of Willis Centerline Graphs: A Dataset and Baseline Algorithm” (2025)](https://arxiv.org/abs/2510.13720).
+> [Musio et al., “Circle of Willis Centerline Graphs: A Dataset and Baseline Algorithm” (2025)](https://arxiv.org/abs/2510.13720).
 
 <p align="center">
   <img src="https://github.com/fmusio/CoW_Centerline_Extraction/blob/main/figure_example_cnt.png" width="600" />
@@ -26,7 +26,7 @@ This repository provides an end-to-end pipeline that generates labeled centerlin
 ### Centerline Dataset
 Our baseline algorithm was developed and validated using a curated centerline dataset created with the [Voreen graph generation tool](https://github.com/jqmcginnis/voreen_tools). The dataset is based on the TopCoW segmentation masks and was post-processed and verified to ensure anatomical correctness of the centerline graphs.
 
-The training data is available on Zenodo: [Placeholder for Zenodo link]
+The training data is available on Zenodo: [https://zenodo.org/records/17358162](https://zenodo.org/records/17358162)
 
 ## Prerequisites
 ### Install Voreen
