@@ -58,7 +58,7 @@ def find_fixpoints(paths):
             fixpoint2 = list1[-i]
         else:
             break
-
+    
     return fixpoint1, fixpoint2
 
 def get_points_for_aca_pca_fenestration(all_paths, segment, polydata):
@@ -316,6 +316,10 @@ def extract_point_ids_in_order(nodes_dict, variant_dict, polydata):
                         pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
                     elif key == 'L-PCA':
                         assert variant_dict['fenestration']['L-P1'], 'L-P1 fenestration not found'
+                        pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                    elif key == 'BA':
+                        assert variant_dict['fenestration']['R-P1'] or variant_dict['fenestration']['L-P1'], 'P1 fenestration not found'
+                        assert not variant_dict['posterior']['R-P1'] or not variant_dict['posterior']['L-P1'], 'P1 present, fenestration not possible'
                         pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
                     elif key == 'R-ACA':
                         assert variant_dict['fenestration']['R-A1'], 'R-A1 fenestration not found'
