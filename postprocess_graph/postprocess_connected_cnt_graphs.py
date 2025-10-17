@@ -102,16 +102,19 @@ def relabel_aca_pca_segments(variant_dict, polydata):
         acom_boundary = find_boundary_points(10, 15, polydata) + find_boundary_points(11, 15, polydata) + find_boundary_points(12, 15, polydata)
         assert len(acom_boundary) == 1, 'More than one boundary found for 3rd-A2'
         acom_bif_a2 = find_acom_bif_for_3rd_a2(acom_boundary, polydata, labels=[10,11,12,15])
-        path = find_shortest_path(acom_bif_a2, acom_boundary, polydata, [10, 11, 12])
-        edge_labels_to_change = []
-        for edge in path['path']:
-            cell_id = get_cellId_for_edge(edge, polydata)
-            edge_label = label_array[cell_id]
-            if edge_label != 10:
-                if edge_label not in edge_labels_to_change:
-                    edge_labels_to_change.append(edge_label)
-                logger.debug(f'\tChanging label of cell {cell_id} from {edge_label} to 10')
-                polydata = set_label(10, cell_id, polydata)   
+        if acom_boundary[0] == acom_bif_a2:
+            pass
+        else:
+            path = find_shortest_path(acom_bif_a2, acom_boundary, polydata, [10, 11, 12])
+            edge_labels_to_change = []
+            for edge in path['path']:
+                cell_id = get_cellId_for_edge(edge, polydata)
+                edge_label = label_array[cell_id]
+                if edge_label != 10:
+                    if edge_label not in edge_labels_to_change:
+                        edge_labels_to_change.append(edge_label)
+                    logger.debug(f'\tChanging label of cell {cell_id} from {edge_label} to 10')
+                    polydata = set_label(10, cell_id, polydata)   
 
     # R-PCA segment
     if variant_dict['posterior']['R-Pcom']:
