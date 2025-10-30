@@ -146,23 +146,29 @@ def get_cow_variant(polydata):
         logger.info('\tL-Pcom not present')
     
     # R-P1 absent if label not connected to BA
-    assert rpca_label in labels, 'R-PCA not present!'
-    rpca_boundary = find_boundary_points(rpca_label, ba_label, polydata)
-    if len(rpca_boundary) == 0:
-        logger.info('\tR-P1 not present')
-        variant_dict['posterior']['R-P1'] = False
-        assert variant_dict['posterior']['R-Pcom'], 'R-Pcom not present!'
+    if rpca_label in labels:
+        rpca_boundary = find_boundary_points(rpca_label, ba_label, polydata)
+        if len(rpca_boundary) == 0:
+            logger.info('\tR-P1 not present')
+            variant_dict['posterior']['R-P1'] = False
+            assert variant_dict['posterior']['R-Pcom'], 'R-Pcom not present!'
+        else:
+            logger.info('\tR-P1 present')
     else:
-        logger.info('\tR-P1 present')
+        logger.warning('\tR-PCA not present, thus R-P1 not present!')
+        variant_dict['posterior']['R-P1'] = False
     
     # L-P1 absent if label not connected to BA
-    assert lpca_label in labels, 'L-PCA not present!'
-    lpca_boundary = find_boundary_points(lpca_label, ba_label, polydata)
-    if len(lpca_boundary) == 0:
-        logger.info('\tL-P1 not present')
-        variant_dict['posterior']['L-P1'] = False
-        assert variant_dict['posterior']['L-Pcom'], 'L-Pcom not present!'
+    if lpca_label in labels:
+        lpca_boundary = find_boundary_points(lpca_label, ba_label, polydata)
+        if len(lpca_boundary) == 0:
+            logger.info('\tL-P1 not present')
+            variant_dict['posterior']['L-P1'] = False
+            assert variant_dict['posterior']['L-Pcom'], 'L-Pcom not present!'
+        else:
+            logger.info('\tL-P1 present')
     else:
-        logger.info('\tL-P1 present')
+        logger.warning('\tL-PCA not present, thus L-P1 not present!')
+        variant_dict['posterior']['L-P1'] = False
 
     return variant_dict

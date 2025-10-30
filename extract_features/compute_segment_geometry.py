@@ -231,12 +231,12 @@ def extract_segment_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str,
     # remove P1 entry if P1 broken (not touching BA) and segment shorter than 2/3 the median_p1 length
     # NOTE: This threshold might be changed
     threshold_p1 = threshold_broken_segment_removal * median_p1
-    if not variant_dict['posterior']['R-P1']:
+    if not variant_dict['posterior']['R-P1'] and '2' in nodes_dict:
         if 'Pcom bifurcation' in nodes_dict['2'] and 'BA boundary' in nodes_dict['2']:
             if 'R-P1' in geometry_dict and geometry_dict['R-P1'][0]['length'] < threshold_p1:
                 logger.warning(f'\tALERT: Removing R-P1 entry from feature dict!')
                 geometry_dict.pop('R-P1')
-    if not variant_dict['posterior']['L-P1']:
+    if not variant_dict['posterior']['L-P1'] and '3' in nodes_dict:
         if 'Pcom bifurcation' in nodes_dict['3'] and 'BA boundary' in nodes_dict['3']:
             if 'L-P1' in geometry_dict and geometry_dict['L-P1'][0]['length'] < threshold_p1:
                 logger.warning(f'\tALERT: Removing L-P1 entry from feature dict!')

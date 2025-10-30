@@ -347,7 +347,8 @@ def get_consistent_segments(segments, polydata, nodes_dict, modality='ct', media
             else:
                 segments[f'{side}PCA'] = [(segments[f'{side}PCA'][0][0], segments[f'{side}PCA'][0][1], segments[f'{side}PCA'][0][2])]
         else:
-            raise NotImplementedError
+            logger.warning(f'{side}PCA segment missing altogether?!')
+            pass
     
     # ACA
     sides = ['R-', 'L-']
