@@ -959,10 +959,20 @@ def get_aca_acom_nodes(polydata, variant_dict):
 
                 if len(aca_acom_boundary) == 1: # typical case
                     assert len(aca_acom_nodes_high) > 0, 'No ACA/Acom 3-nodes found!'
-                    acom_bif_id, _ = find_closest_node_to_point(aca_acom_nodes_high, aca_acom_boundary[0], aca_label, polydata)
-                    logger.debug(f'\tClosest ACA/Acom 3-node to ACA/Acom boundary is Acom bifurcation: {acom_bif_id}')
+                    acom_bif_id, dist = find_closest_node_to_point(aca_acom_nodes_high, aca_acom_boundary[0], aca_label, polydata)
+                    # check for 1-sided Acom fenestration
+                    if len(aca_nodes_3) >= 1:
+                        acom_bif_id_2, dist_2 = find_closest_node_to_point(aca_nodes_3, aca_acom_boundary[0], aca_label, polydata)
+                        if dist_2 < 6: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
+                            opposite_aca_label = raca_label if aca_label == laca_label else laca_label
+                            boundary_opposite_aca_acom = find_boundary_points(opposite_aca_label, acom_label, polydata)
+                            if len(boundary_opposite_aca_acom) > 1: # 1-sided Acom fenestration!?
+                                acom_bif_id = acom_bif_id_2
+                                logger.debug(f'\tACA/Acom boundary point is close to Acom bifurcation: {acom_bif_id}')
+                            else:
+                                logger.debug(f'\tClosest ACA/Acom 3-node to ACA/Acom boundary is Acom bifurcation: {acom_bif_id}')
                     
-                    # If path length too longth between acom bif and acom boundary -> broken fenestration!
+                    # If path length too long between acom bif and acom boundary -> broken fenestration!
                     path_acom_bif_boundary = find_shortest_path(acom_bif_id, aca_acom_boundary[0], polydata, aca_label)
                     if path_acom_bif_boundary['length'] > 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value big enoug!
                         logger.warning(f'\tALERT: Path length between Acom bifurcation and Acom boundary too long: {path_acom_bif_boundary["length"]}. Broken A1 fenestration?!')
@@ -1005,7 +1015,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
                                 aca_boundary_acom += get_node_dict_entry(pt, 3, aca_label, polydata)
                                 acom_boundary_aca += get_node_dict_entry(pt, 3, acom_label, polydata)
                                 acom_bif_node += aca_boundary_acom
-                                logger.debug(f'\tACA/Acom boundary point is Acom bifurcation: {acom_bif_node}')
+                                logger.debug(f'\tACA/Acom boundary point is Acom bifurcation: {pt}')
                             elif pt in aca_nodes_1:
                                 aca_boundary_acom += get_node_dict_entry(pt, 2, aca_label, polydata)
                                 acom_boundary_aca += get_node_dict_entry(pt, 2, acom_label, polydata)
