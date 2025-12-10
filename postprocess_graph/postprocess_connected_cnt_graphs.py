@@ -102,6 +102,22 @@ def relabel_aca_pca_ica_segments(variant_dict, polydata):
     # 3rd-A2 segment
     # Set edge labels between 3rd-A2 origin and 3rd-A2 boundary to 10
     if variant_dict['anterior']['3rd-A2']:
+        acom_a2_boundary = find_boundary_points(10, 15, polydata)
+        if len(acom_a2_boundary) > 1:
+            logger.warning('More than two boundary points found for 3rd-A2!')
+            # relabel edges between R-ACA and L-ACA boundaries
+            raca_acom_boundary = find_boundary_points(11, 10, polydata)
+            laca_acom_boundary = find_boundary_points(12, 10, polydata)
+            assert len(raca_acom_boundary) == 1, 'More than one boundary found for R-ACA Acom!'
+            assert len(laca_acom_boundary) == 1, 'More than one boundary found for L-ACA Acom!'
+            path = find_shortest_path(raca_acom_boundary[0], laca_acom_boundary[0], polydata, [10,15])
+            for edge in path['path']:
+                cell_id = get_cellId_for_edge(edge, polydata)
+                edge_label = label_array[cell_id]
+                if edge_label != 10:
+                    logger.debug(f'\tChanging label of cell {cell_id} from {edge_label} to 10')
+                    polydata = set_label(10, cell_id, polydata)
+
         acom_boundary = find_boundary_points(10, 15, polydata) + find_boundary_points(11, 15, polydata) + find_boundary_points(12, 15, polydata)
         assert len(acom_boundary) == 1, 'More than one boundary found for 3rd-A2'
         acom_bif_a2 = find_acom_bif_for_3rd_a2(acom_boundary, polydata, labels=[10,11,12,15])
