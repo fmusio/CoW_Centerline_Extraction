@@ -981,7 +981,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
                     # check for 1-sided Acom fenestration
                     if len(aca_nodes_3) >= 1:
                         acom_bif_id_2, dist_2 = find_closest_node_to_point(aca_nodes_3, aca_acom_boundary[0], aca_label, polydata)
-                        if dist_2 < 6: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
+                        if dist_2 < 8: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
                             opposite_aca_label = raca_label if aca_label == laca_label else laca_label
                             boundary_opposite_aca_acom = find_boundary_points(opposite_aca_label, acom_label, polydata)
                             if len(boundary_opposite_aca_acom) > 1: # 1-sided Acom fenestration!?

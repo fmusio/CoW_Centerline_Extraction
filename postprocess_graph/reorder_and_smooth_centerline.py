@@ -399,7 +399,6 @@ def extract_point_ids_in_order(nodes_dict, variant_dict, polydata):
 
             elif len(segments[key]) == 1:
                 segment = segments[key][0]
-                print('segment', segment, key)
                 all_paths = find_all_paths(segment[0], segment[1], polydata, segment[2])
                 if len(all_paths) == 1: # usual case
                     path = all_paths[0]['path']
