@@ -424,7 +424,7 @@ def get_ba_pca_nodes(polydata, variant_dict):
                                     raise ValueError('PCA 3-node not PCA end?!')
                             logger.debug(f'\tPCA end is branch point: {pca_end}')
                             variant_dict['fenestration'][f'{p1_name}'] = True
-                        else: # 2 PCA 3-nodes, 1 PCA higher node, and 2 BA boundaries
+                        else: # See topcow_mr_012: 2 PCA 3-nodes, 1 PCA higher node, and 2 BA boundaries
                             assert len(ba_pca_boundary) == 2, 'Wrong number of BA/PCA boundaries'
                             logger.debug('\tP1 fenestration starting at BA already...!')
                             variant_dict['fenestration'][f'{p1_name}'] = True

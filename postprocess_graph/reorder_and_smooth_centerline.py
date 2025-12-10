@@ -40,7 +40,8 @@ def find_fixpoints(paths):
     assert len(paths) == 2, 'More than two paths found!'
     pointIds_paths = []
     for path in paths:
-        pointIds = [p[0] for p in path['path'][1:]]
+        # pointIds = [p[0] for p in path['path'][1:]]
+        pointIds = [p[0] for p in path['path']]
         pointIds_paths.append(pointIds)
     # Find the last common number before the lists diverge -> fixpoint for beginning of fenestration
     fixpoint1 = None
@@ -61,6 +62,24 @@ def find_fixpoints(paths):
     
     return fixpoint1, fixpoint2
 
+def get_ordered_fixpoints(fixpoints, all_paths):
+    """
+    Get the ordered fixpoints for fenestration with more than 2 paths and fixpoints.
+
+    Args:
+    fixpoints: list, list of fixpoints
+    all_paths: list, list of all paths (for ACA/PCA segment)
+
+    Returns:
+    ordered_fixpoints: tuple, ordered fixpoints
+    """
+    for path in all_paths:
+        pointIds = [p[0] for p in path['path']]
+        # if all fixpoints are in pointIds, return them in order
+        if all(fp in pointIds for fp in fixpoints):
+            ordered_fixpoints = tuple(sorted(fixpoints, key=lambda x: pointIds.index(x)))
+            return ordered_fixpoints
+
 def get_points_for_aca_pca_fenestration(all_paths, segment, polydata):
     """
     Get the ordered points for the A1/P1 fenestration with multiple paths and fixpoints.
@@ -74,28 +93,106 @@ def get_points_for_aca_pca_fenestration(all_paths, segment, polydata):
     Returns:
     pts: list, list of points
     """
+    if len(all_paths) == 2: # almost all fenestrations contain just 2 paths
+        # find fixpoints for fenestration (beginning and end of fenestration)
+        fixpoint1, fixpoint2 = find_fixpoints(all_paths)
+        assert fixpoint1 is not None and fixpoint2 is not None, 'Fixpoints not found for ACA/PCA fenestration!'
 
-    # find fixpoints for fenestration (beginning and end of fenestration)
-    fixpoint1, fixpoint2 = find_fixpoints(all_paths)
-    assert fixpoint1 is not None and fixpoint2 is not None, 'Fixpoints not found for ACA/PCA fenestration!'
+        # combine 4 segment paths in case of ACA/PCA fenestration
+        path1, path2, path3, path4 = [], [], [], []
 
-    # combine 4 segment paths in case of ACA/PCA fenestration
-    path1, path2, path3, path4 = [], [], [], []
+        if fixpoint1 != segment[0]:
+            paths = find_all_paths(segment[0], fixpoint1, polydata, segment[2])
+            assert len(paths) == 1
+            path1 = paths[0]['path']
+        
+        paths = find_all_paths(fixpoint1, fixpoint2, polydata, segment[2])
+        assert len(paths) == 2
+        path2, path3 = paths[0]['path'], paths[1]['path']
 
-    if fixpoint1 != segment[0]:
-        paths = find_all_paths(segment[0], fixpoint1, polydata, segment[2])
+        paths = find_all_paths(fixpoint2, segment[1], polydata, segment[2])
         assert len(paths) == 1
-        path1 = paths[0]['path']
+        path4 = paths[0]['path']
+        
+        pts = [[p[0] for p in path] + [path[-1][1]] for path in [path1, path2, path3, path4] if len(path) > 0]
     
-    paths = find_all_paths(fixpoint1, fixpoint2, polydata, segment[2])
-    assert len(paths) == 2
-    path2, path3 = paths[0]['path'], paths[1]['path']
+    elif len(all_paths) == 3: # rare fenestrations with 3 paths
+        # loop over all combinations of 2 paths to find all fixpoints
+        fixpoints = []
+        for i in range(len(all_paths)):
+            for j in range(i+1, len(all_paths)):
+                path_a = all_paths[i]
+                path_b = all_paths[j]
+                fixpoint1, fixpoint2 = find_fixpoints([path_a, path_b])
+                if fixpoint1 is not None and fixpoint2 is not None:
+                    fixpoints.append(fixpoint1)
+                    fixpoints.append(fixpoint2)
+        fixpoints = list(set(fixpoints))
+        assert len(fixpoints) > 2, 'Wrong number of fixpoints found for ACA/PCA fenestration with 3 paths!'
+        if len(fixpoints) == 4:
+            path1, path2, path3, path4, path5, path6, path7 = [], [], [], [], [], [], []
+            ordered_fixpoints = get_ordered_fixpoints(fixpoints, all_paths)
+            if ordered_fixpoints[0] != segment[0]:
+                paths = find_all_paths(segment[0], ordered_fixpoints[0], polydata, segment[2])
+                assert len(paths) == 1
+                path1 = paths[0]['path']
+            else:
+                path1 = []
+            # take the path with only two fixpoints (first and last) as path2
+            for path in all_paths:
+                pointIds = [p[0] for p in path['path']]
+                # check how many fixpoints are in pointIds
+                if not all(fp in pointIds for fp in ordered_fixpoints):
+                    assert len([fp for fp in ordered_fixpoints if fp in pointIds]) == 2, 'Path with more than 2 fixpoints found!'
+                    assert ordered_fixpoints[0] in pointIds and ordered_fixpoints[-1] in pointIds, 'Wrong fixpoints in path!'
+                    id1 = pointIds.index(ordered_fixpoints[0])
+                    pointIds_end = [p[1] for p in path['path']]
+                    id2 = pointIds_end.index(ordered_fixpoints[-1])
+                    path2 = path['path'][id1:id2+1]
+                    all_paths.remove(path)
+                    break
+            
+            assert path2 != [], 'Path2 not found!'
+            assert len(all_paths) == 2, 'Wrong number of remaining paths!'
 
-    paths = find_all_paths(fixpoint2, segment[1], polydata, segment[2])
-    assert len(paths) == 1
-    path4 = paths[0]['path']
-    
-    pts = [[p[0] for p in path] + [path[-1][1]] for path in [path1, path2, path3, path4] if len(path) > 0]
+            fixpoint1, fixpoint2, fixpoint3, fixpoint4 = ordered_fixpoints[0], ordered_fixpoints[1], ordered_fixpoints[2], ordered_fixpoints[3]
+            paths = find_all_paths(fixpoint1, fixpoint2, polydata, segment[2])
+            # find path that contains no other fixpoints
+            for path in paths:
+                pointIds = [p[0] for p in path['path'][1:]]
+                if all(fp not in pointIds for fp in ordered_fixpoints):
+                    path3 = path['path']
+                    break
+            
+            paths = find_all_paths(fixpoint2, fixpoint3, polydata, segment[2])
+            for path in paths:
+                pointIds = [p[0] for p in path['path'][1:]]
+                if all(fp not in pointIds for fp in ordered_fixpoints):
+                    path4 = path['path']
+                    paths.remove(path)
+                    break
+            for path in paths:
+                pointIds = [p[0] for p in path['path'][1:]]
+                if all(fp not in pointIds for fp in ordered_fixpoints):
+                    path5 = path['path']
+                    break
+
+            paths = find_all_paths(fixpoint3, fixpoint4, polydata, segment[2])
+            for path in paths:
+                pointIds = [p[0] for p in path['path'][1:]]
+                if all(fp not in pointIds for fp in ordered_fixpoints):
+                    path6 = path['path']
+                    break
+
+            paths = find_all_paths(fixpoint4, segment[1], polydata, segment[2])
+            assert len(paths) == 1
+            path7 = paths[0]['path']
+
+            pts = [[p[0] for p in path] + [path[-1][1]] for path in [path1, path2, path3, path4, path5, path6, path7] if len(path) > 0]
+            
+        else:
+            raise NotImplementedError('Other than 4 fixpoints not implemented yet!')
+
     return pts
     
 
@@ -302,38 +399,54 @@ def extract_point_ids_in_order(nodes_dict, variant_dict, polydata):
 
             elif len(segments[key]) == 1:
                 segment = segments[key][0]
+                print('segment', segment, key)
                 all_paths = find_all_paths(segment[0], segment[1], polydata, segment[2])
                 if len(all_paths) == 1: # usual case
                     path = all_paths[0]['path']
                     point_ids = [p[0] for p in path] + [path[-1][1]]
                     pts.append(point_ids)
                 else: # 2 paths (e.g. for A1/P1 fenestration)
-                    assert len(all_paths) == 2, f'{key} has more than two paths!'
-                    logger.warning(f'\tALERT: {key} has multiple paths! Possible fenestration detected!')
-                    # Check if A1/P1 fenestration is present
-                    if key == 'R-PCA':
-                        assert variant_dict['fenestration']['R-P1'], 'R-P1 fenestration not found'
-                        pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
-                    elif key == 'L-PCA':
-                        assert variant_dict['fenestration']['L-P1'], 'L-P1 fenestration not found'
-                        pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
-                    elif key == 'BA':
-                        assert variant_dict['fenestration']['R-P1'] or variant_dict['fenestration']['L-P1'], 'P1 fenestration not found'
-                        assert not variant_dict['posterior']['R-P1'] or not variant_dict['posterior']['L-P1'], 'P1 present, fenestration not possible'
-                        pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
-                    elif key == 'R-ACA':
-                        assert variant_dict['fenestration']['R-A1'], 'R-A1 fenestration not found'
-                        pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
-                    elif key == 'L-ACA':
-                        assert variant_dict['fenestration']['L-A1'], 'L-A1 fenestration not found'
-                        pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
-                    else:
-                        logger.warning(f'\tALERT: {key} has multiple paths!')
-                        path = find_shortest_path(segment[0], segment[1], polydata, segment[2])['path']
-                        point_ids = [p[0] for p in path] + [path[-1][1]]
-                        pts.append(point_ids)
+                    if len(all_paths) == 2:
+                        logger.warning(f'\tALERT: {key} has multiple paths! Possible fenestration detected!')
+                        # Check if A1/P1 fenestration is present
+                        if key == 'R-PCA':
+                            assert variant_dict['fenestration']['R-P1'], 'R-P1 fenestration not found'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        elif key == 'L-PCA':
+                            assert variant_dict['fenestration']['L-P1'], 'L-P1 fenestration not found'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        elif key == 'BA':
+                            assert variant_dict['fenestration']['R-P1'] or variant_dict['fenestration']['L-P1'], 'P1 fenestration not found'
+                            assert not variant_dict['posterior']['R-P1'] or not variant_dict['posterior']['L-P1'], 'P1 present, fenestration not possible'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        elif key == 'R-ACA':
+                            assert variant_dict['fenestration']['R-A1'], 'R-A1 fenestration not found'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        elif key == 'L-ACA':
+                            assert variant_dict['fenestration']['L-A1'], 'L-A1 fenestration not found'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        else:
+                            logger.warning(f'\tALERT: {key} has multiple paths!')
+                            path = find_shortest_path(segment[0], segment[1], polydata, segment[2])['path']
+                            point_ids = [p[0] for p in path] + [path[-1][1]]
+                            pts.append(point_ids)
 
-                    logger.warning(f'\tPoints for {key} fenestration: {pts}')
+                        logger.warning(f'\tPoints for {key} fenestration: {pts}')
+                    
+                    elif len(all_paths) == 3:
+                        logger.warning(f'\tALERT: {key} has multiple paths! Possible fenestration detected!')
+                        if key == 'R-PCA':
+                            assert variant_dict['fenestration']['R-P1'], 'R-P1 fenestration not found'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        elif key == 'L-PCA':
+                            assert variant_dict['fenestration']['L-P1'], 'L-P1 fenestration not found'
+                            pts = get_points_for_aca_pca_fenestration(all_paths, segment, polydata)
+                        else: 
+                            logger.warning(f'\tALERT: {key} has 3 paths!')
+                            raise NotImplementedError(f'Fenestration with 3 paths not implemented for segment {key}?!')
+                    else:
+                        logger.warning(f'\tALERT: {key} has {len(all_paths)} paths!')
+                        raise ValueError(f'More than 2 or 3 paths found for segment {key}?!')
                 
             else:
                 # 3 or more segments (e.g. for MCA branches)
