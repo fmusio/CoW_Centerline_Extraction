@@ -404,26 +404,40 @@ def get_ba_pca_nodes(polydata, variant_dict):
                         pcom_bif_id, _ = find_closest_node_to_point(pca_nodes_high, pca_pcom_boundary[0], pca_label, polydata)
                         logger.debug(f'\tPcom bifurcation ID: {pcom_bif_id}')
                         assert pcom_bif_id in pca_nodes_higher, 'PCA higher node is not Pcom bifurcation!'
-                        assert len(ba_pca_boundary) == 1, 'Wrong number of BA/PCA boundaries'
-                        path1 = find_shortest_path(pca_nodes_3[0], ba_pca_boundary[0], polydata, pca_label)['path']
-                        if assert_node_on_path(pcom_bif_id, path1):
-                            assert assert_node_on_path(pca_nodes_3[1], path1), 'PCA 3-node not on path!'
-                            pca_end = get_node_dict_entry(pca_nodes_3[0], 3, pca_label, polydata)
-                            loop = check_for_loop_between_nodes(pca_nodes_3[1], pcom_bif_id, pca_label, polydata)
-                            logger.debug(f'\tP1 loop node: {pca_nodes_3[1]}')
-                            assert loop, 'No PCA loop present?!'
-                        else:
-                            path2 = find_shortest_path(pca_nodes_3[1], ba_pca_boundary[0], polydata, pca_label)['path']
-                            if assert_node_on_path(pcom_bif_id, path2):
-                                assert assert_node_on_path(pca_nodes_3[0], path2), 'PCA 3-node not on path!'
-                                pca_end = get_node_dict_entry(pca_nodes_3[1], 3, pca_label, polydata)
-                                loop = check_for_loop_between_nodes(pca_nodes_3[0], pcom_bif_id, pca_label, polydata)
-                                logger.debug(f'\tP1 loop node: {pca_nodes_3[0]}')
+                        if len(ba_pca_boundary) == 1: # PCA end is branching point
+                            path1 = find_shortest_path(pca_nodes_3[0], ba_pca_boundary[0], polydata, pca_label)['path']
+                            if assert_node_on_path(pcom_bif_id, path1):
+                                assert assert_node_on_path(pca_nodes_3[1], path1), 'PCA 3-node not on path!'
+                                pca_end = get_node_dict_entry(pca_nodes_3[0], 3, pca_label, polydata)
+                                loop = check_for_loop_between_nodes(pca_nodes_3[1], pcom_bif_id, pca_label, polydata)
+                                logger.debug(f'\tP1 loop node: {pca_nodes_3[1]}')
                                 assert loop, 'No PCA loop present?!'
                             else:
-                                raise ValueError('PCA 3-node not PCA end?!')
-                        logger.debug(f'\tPCA end is branch point: {pca_end}')
-                        variant_dict['fenestration'][f'{p1_name}'] = True
+                                path2 = find_shortest_path(pca_nodes_3[1], ba_pca_boundary[0], polydata, pca_label)['path']
+                                if assert_node_on_path(pcom_bif_id, path2):
+                                    assert assert_node_on_path(pca_nodes_3[0], path2), 'PCA 3-node not on path!'
+                                    pca_end = get_node_dict_entry(pca_nodes_3[1], 3, pca_label, polydata)
+                                    loop = check_for_loop_between_nodes(pca_nodes_3[0], pcom_bif_id, pca_label, polydata)
+                                    logger.debug(f'\tP1 loop node: {pca_nodes_3[0]}')
+                                    assert loop, 'No PCA loop present?!'
+                                else:
+                                    raise ValueError('PCA 3-node not PCA end?!')
+                            logger.debug(f'\tPCA end is branch point: {pca_end}')
+                            variant_dict['fenestration'][f'{p1_name}'] = True
+                        else: # 2 PCA 3-nodes, 1 PCA higher node, and 2 BA boundaries
+                            assert len(ba_pca_boundary) == 2, 'Wrong number of BA/PCA boundaries'
+                            logger.debug('\tP1 fenestration starting at BA already...!')
+                            variant_dict['fenestration'][f'{p1_name}'] = True
+                            for pt in ba_pca_boundary:
+                                if pt in pca_nodes_1:
+                                    pca_nodes_1.remove(pt)
+                            for pt in pca_pcom_boundary:
+                                if pt in pca_nodes_1:
+                                    pca_nodes_1.remove(pt)
+                            assert len(pca_nodes_1) == 1, 'Wrong number of PCA 1-nodes!'
+                            pca_end = get_node_dict_entry(pca_nodes_1[0], 1, pca_label, polydata)
+                            logger.debug(f'\tPCA end: {pca_end}') 
+                            
                     
                     pca_pcom_bif = get_node_dict_entry(pcom_bif_id, 3, pca_label, polydata)
                     
@@ -734,9 +748,13 @@ def get_ica_mca_nodes(polydata, variant_dict):
                         assert len(ica_nodes_3) == 1, 'Wrong number of ICA 3-nodes!'
                         pcom_bif_node = get_node_dict_entry(ica_nodes_3[0], 3, ica_label, polydata)
                         logger.debug(f'\tPcom bifurcation: {pcom_bif_node}')
-                        assert len(ica_nodes_1) == 3, 'Wrong number of ICA 1-nodes!'
-                        ica_nodes_1.remove(ica_mca_boundary[0])
-                        ica_nodes_1.remove(ica_pcom_boundary[0])
+                        if ica_pcom_boundary[0] in ica_nodes_1:
+                            assert len(ica_nodes_1) == 3, 'Wrong number of ICA 1-nodes!'
+                            ica_nodes_1.remove(ica_mca_boundary[0])
+                            ica_nodes_1.remove(ica_pcom_boundary[0])
+                        else:
+                            assert len(ica_nodes_1) == 2, 'Wrong number of ICA 1-nodes!'
+                            ica_nodes_1.remove(ica_mca_boundary[0])
                         ica_start = get_node_dict_entry(ica_nodes_1[0], 1, ica_label, polydata)
                         logger.debug(f'\tICA start: {ica_start}')
                 

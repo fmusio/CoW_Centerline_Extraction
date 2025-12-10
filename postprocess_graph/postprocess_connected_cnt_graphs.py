@@ -50,9 +50,9 @@ def change_background_label(polydata, background_label=0, max_iterations=20):
 
     return polydata
     
-def relabel_aca_pca_segments(variant_dict, polydata):
+def relabel_aca_pca_ica_segments(variant_dict, polydata):
     """
-    Relabel ACA and PCA segments to correct for Acom and Pcom label spilling.
+    Relabel ACA, PCA, ICA segments to correct for Acom and Pcom label spilling.
     This function uses the variant_dict to determine which segments are present and relabels
     the segments close to the acom/pcom bifurcations if necessary.
     
@@ -72,10 +72,13 @@ def relabel_aca_pca_segments(variant_dict, polydata):
         laca_nodes_1 = get_nodes_of_degree_n(1, 12, polydata)
         laca_ica_boundary = find_boundary_points(12, 6, polydata)
 
+        raca_acom_boundary = find_boundary_points(11, 10, polydata)
+        laca_acom_boundary = find_boundary_points(12, 10, polydata)
+
         # Relabel R-ACA 
         # if label spilling happens at Acom bifurcation, the number of R-ACA 1-nodes 
-        # should be larger than 2
-        if len(raca_nodes_1) > 2 and len(raca_ica_boundary) > 0:
+        # should be larger than 2 and there is more than 1 boundary between aca and acom
+        if len(raca_nodes_1) > 2 and len(raca_ica_boundary) > 0 and len(raca_acom_boundary) > 1:
             # find path that runs through the acom bifurcation
             longest_shortest_path = find_longest_shortest_path(raca_ica_boundary, raca_nodes_1, polydata, [11, 10])['path']
             for edge in longest_shortest_path:
@@ -86,8 +89,8 @@ def relabel_aca_pca_segments(variant_dict, polydata):
         
         # Relabel L-ACA 
         # if label spilling happens at Acom bifurcation, the number of L-ACA 1-nodes 
-        # should be larger than 2
-        if len(laca_nodes_1) > 2 and len(laca_ica_boundary) > 0:
+        # should be larger than 2 and there is more than 1 boundary between aca and acom
+        if len(laca_nodes_1) > 2 and len(laca_ica_boundary) > 0 and len(laca_acom_boundary) > 1:
             # find path that runs through the acom bifurcation
             longest_shortest_path = find_longest_shortest_path(laca_ica_boundary, laca_nodes_1, polydata, [12, 10])['path']
             for edge in longest_shortest_path:
@@ -116,14 +119,15 @@ def relabel_aca_pca_segments(variant_dict, polydata):
                     logger.debug(f'\tChanging label of cell {cell_id} from {edge_label} to 10')
                     polydata = set_label(10, cell_id, polydata)   
 
-    # R-PCA segment
+    # R-PCA & R-ICA segment
     if variant_dict['posterior']['R-Pcom']:
         rpca_nodes_1 = get_nodes_of_degree_n(1, 2, polydata)
         rpca_ba_boundary = find_boundary_points(2, 1, polydata)
+        rpca_rpcom_boundary = find_boundary_points(2, 8, polydata)
         
         # if label spilling happens at R-Pcom bifurcation, the number of R-PCA 1-nodes 
-        # should be larger than 2
-        if len(rpca_nodes_1) > 2 and len(rpca_ba_boundary) > 0:
+        # should be larger than 2 and there is more than 1 boundary between pca and pcom
+        if len(rpca_nodes_1) > 2 and len(rpca_ba_boundary) > 0 and len(rpca_rpcom_boundary) > 1:
              # find path that runs through the pcom bifurcation
             longest_shortest_path = find_longest_shortest_path(rpca_ba_boundary, rpca_nodes_1, polydata, [2, 8])['path']
             for edge in longest_shortest_path:
@@ -131,15 +135,33 @@ def relabel_aca_pca_segments(variant_dict, polydata):
                 if label_array[cell_id] != 2:
                     logger.debug(f'\tChanging label of cell {cell_id} from {label_array[cell_id]} to 2')
                     polydata = set_label(2, cell_id, polydata)
+        
+        # Check for R-Pcom label spilling at R-ICA
+        rica_rpcom_boundary = find_boundary_points(4, 8, polydata)
+        if len(rica_rpcom_boundary) > 1:
+            rica_nodes_1 = get_nodes_of_degree_n(1, 4, polydata)
+            rica_rmca_boundary = find_boundary_points(4, 5, polydata)
+            if len(rica_rmca_boundary) > 0:
+                boundary = rica_rmca_boundary
+            else:
+                boundary = find_boundary_points(4, 11, polydata)
+                assert len(boundary) > 0, 'No boundary found for R-ICA!'
+            longest_shortest_path = find_longest_shortest_path(boundary, rica_nodes_1, polydata, [4, 8])['path']
+            for edge in longest_shortest_path:
+                cell_id = get_cellId_for_edge(edge, polydata)
+                if label_array[cell_id] != 4:
+                    logger.debug(f'\tChanging label of cell {cell_id} from {label_array[cell_id]} to 4')
+                    polydata = set_label(4, cell_id, polydata)
 
     # L-PCA segment
     if variant_dict['posterior']['L-Pcom']:
         lpca_nodes_1 = get_nodes_of_degree_n(1, 3, polydata)
         lpca_ba_boundary = find_boundary_points(3, 1, polydata)
+        lpca_lpcom_boundary = find_boundary_points(3, 9, polydata)
 
         # if label spilling happens at L-Pcom bifurcation, the number of L-PCA 1-nodes
-        # should be larger than 2
-        if len(lpca_nodes_1) > 2 and len(lpca_ba_boundary) > 0:
+        # should be larger than 2 and there is more than 1 boundary between pca and pcom
+        if len(lpca_nodes_1) > 2 and len(lpca_ba_boundary) > 0 and len(lpca_lpcom_boundary) > 1:
             # find path that runs through the pcom bifurcation
             longest_shortest_path = find_longest_shortest_path(lpca_ba_boundary, lpca_nodes_1, polydata, [3, 9])['path']
             for edge in longest_shortest_path:
@@ -147,6 +169,23 @@ def relabel_aca_pca_segments(variant_dict, polydata):
                 if label_array[cell_id] != 3:
                     logger.debug(f'\tChanging label of cell {cell_id} from {label_array[cell_id]} to 3')
                     polydata = set_label(3, cell_id, polydata)
+        
+        # Check for L-Pcom label spilling at L-ICA
+        lica_lpcom_boundary = find_boundary_points(6, 9, polydata)
+        if len(lica_lpcom_boundary) > 1:
+            lica_nodes_1 = get_nodes_of_degree_n(1, 6, polydata)
+            lica_lmca_boundary = find_boundary_points(6, 7, polydata)
+            if len(lica_lmca_boundary) > 0:
+                boundary = lica_lmca_boundary
+            else:
+                boundary = find_boundary_points(6, 12, polydata)
+                assert len(boundary) > 0, 'No boundary found for L-ICA!'
+            longest_shortest_path = find_longest_shortest_path(boundary, lica_nodes_1, polydata, [6, 9])['path']
+            for edge in longest_shortest_path:
+                cell_id = get_cellId_for_edge(edge, polydata)
+                if label_array[cell_id] != 6:
+                    logger.debug(f'\tChanging label of cell {cell_id} from {label_array[cell_id]} to 6')
+                    polydata = set_label(6, cell_id, polydata)
     
     return polydata
 
@@ -773,7 +812,7 @@ def run_postprocessing(input_graph: str, output_filename_without_extension: str,
     # 3) Correcting graph
     logger.info('Correcting graph where necessary...')
     logger.info('Try: Relabeling ACA/PCA segments in case of Acom/Pcom label spilling')
-    polydata = relabel_aca_pca_segments(variant_dict, polydata) # correct Acom/Pcom label spilling
+    polydata = relabel_aca_pca_ica_segments(variant_dict, polydata) # correct Acom/Pcom label spilling
     logger.info('Try: Removing self-loop edges')
     polydata = remove_self_loop_edges(polydata) # remove self-loops and duplicate edges
     logger.info('Try: Connecting broken ACA segments')
