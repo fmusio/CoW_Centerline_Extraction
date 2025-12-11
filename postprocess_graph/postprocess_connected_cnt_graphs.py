@@ -510,6 +510,9 @@ def remove_self_loop(polydata, length_threshold=5):
                     polydata = delete_cells(cells_to_remove, polydata)
                     logger.debug(f'\tRemoved cells: {cells_to_remove}')
                 else:
+                    # NOTE: There are certain cases that trigger this error where you don't want to remove the loop
+                    # e.g. topcow_ct_012
+                    # In that case, comment out the "raise ValueError" line below
                     logger.warning(f'\tALERT: Loop path {loop_paths[0]} is longer than threshold {length_threshold}. Not removing it.')
                     raise ValueError(f'\tALERT: Loop path {loop_paths[0]} is longer than threshold {length_threshold}. Not removing it.')
 
