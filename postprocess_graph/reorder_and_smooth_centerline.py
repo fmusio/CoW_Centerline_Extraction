@@ -129,7 +129,7 @@ def get_points_for_aca_pca_fenestration(all_paths, segment, polydata):
                     fixpoints.append(fixpoint2)
         fixpoints = list(set(fixpoints))
         assert len(fixpoints) > 2, 'Wrong number of fixpoints found for ACA/PCA fenestration with 3 paths!'
-        if len(fixpoints) == 4:
+        if len(fixpoints) == 4 or len(fixpoints) == 3:
             path1, path2, path3, path4, path5, path6, path7 = [], [], [], [], [], [], []
             ordered_fixpoints = get_ordered_fixpoints(fixpoints, all_paths)
             if ordered_fixpoints[0] != segment[0]:
@@ -155,7 +155,14 @@ def get_points_for_aca_pca_fenestration(all_paths, segment, polydata):
             assert path2 != [], 'Path2 not found!'
             assert len(all_paths) == 2, 'Wrong number of remaining paths!'
 
-            fixpoint1, fixpoint2, fixpoint3, fixpoint4 = ordered_fixpoints[0], ordered_fixpoints[1], ordered_fixpoints[2], ordered_fixpoints[3]
+            if len(fixpoints) == 3:
+                nodes_deg_5 = get_nodes_of_degree_n(5, segment[2], polydata)
+                assert len(nodes_deg_5) == 1, 'No node of degree 5 node found for fenestration with only 3 fixpoints!'
+                fixpoint1, fixpoint2, fixpoint3 = ordered_fixpoints[0], ordered_fixpoints[1], ordered_fixpoints[2]
+
+            else:
+                fixpoint1, fixpoint2, fixpoint3, fixpoint4 = ordered_fixpoints[0], ordered_fixpoints[1], ordered_fixpoints[2], ordered_fixpoints[3]
+           
             paths = find_all_paths(fixpoint1, fixpoint2, polydata, segment[2])
             # find path that contains no other fixpoints
             for path in paths:
@@ -176,17 +183,23 @@ def get_points_for_aca_pca_fenestration(all_paths, segment, polydata):
                 if all(fp not in pointIds for fp in ordered_fixpoints):
                     path5 = path['path']
                     break
+            
+            if len(fixpoints) == 4:
+                paths = find_all_paths(fixpoint3, fixpoint4, polydata, segment[2])
+                for path in paths:
+                    pointIds = [p[0] for p in path['path'][1:]]
+                    if all(fp not in pointIds for fp in ordered_fixpoints):
+                        path6 = path['path']
+                        break
 
-            paths = find_all_paths(fixpoint3, fixpoint4, polydata, segment[2])
-            for path in paths:
-                pointIds = [p[0] for p in path['path'][1:]]
-                if all(fp not in pointIds for fp in ordered_fixpoints):
-                    path6 = path['path']
-                    break
-
-            paths = find_all_paths(fixpoint4, segment[1], polydata, segment[2])
-            assert len(paths) == 1
-            path7 = paths[0]['path']
+                paths = find_all_paths(fixpoint4, segment[1], polydata, segment[2])
+                assert len(paths) == 1
+                path7 = paths[0]['path']
+            else:
+                path6 = []
+                paths = find_all_paths(fixpoint3, segment[1], polydata, segment[2])
+                assert len(paths) == 1
+                path7 = paths[0]['path']
 
             pts = [[p[0] for p in path] + [path[-1][1]] for path in [path1, path2, path3, path4, path5, path6, path7] if len(path) > 0]
             
