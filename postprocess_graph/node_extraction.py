@@ -95,16 +95,21 @@ def get_ba_pca_nodes(polydata, variant_dict):
             # Choose lowest BA higher node (or lowest BA 1-node) as BA start instead
             ba_nodes_high_copy = copy.deepcopy(ba_nodes_high)
             ba_nodes_high_copy.remove(ba_bif_id)
-            if len(ba_nodes_high) > 0:
+            if len(ba_nodes_high_copy) > 0:
                 z_values = [polydata.GetPoint(pt)[2] for pt in ba_nodes_high_copy]
                 max_z_index = np.argmax(z_values)
                 ba_start = get_node_dict_entry(ba_nodes_high_copy[max_z_index], 3, ba_label, polydata)
                 logger.debug(f'\tLowest BA higher node chosen as BA start: {ba_start}')
-            else:
+            elif len(ba_nodes_1) > 0:
                 z_values = [polydata.GetPoint(pt)[2] for pt in ba_nodes_1]
                 min_z_index = np.argmin(z_values)
                 ba_start = get_node_dict_entry(ba_nodes_1[min_z_index], 1, ba_label, polydata)
                 logger.debug(f'\tLowest BA 1-node chosen as BA start: {ba_start}')
+            else:
+                # We don't have any BA start at all?!
+                logger.warning(f'\tALERT: no BA start found at all!')
+                raise ValueError('No BA start found at all!')
+
 
         # sanity check
         assert len(ba_bif_node) > 0, 'BA bifurcation not found!'
@@ -287,8 +292,8 @@ def get_ba_pca_nodes(polydata, variant_dict):
                         logger.debug(f'\tOnly 1 PCA 3-node present; must be pcom bifurcation: {pca_pcom_bif}')
                         assert len(pca_boundary_ba) == 1, 'Wrong number of BA/PCA boundaries'
                     else: 
-                        if len(pca_nodes_higher) == 1: # P1 fenestration with higher node (deg = 4) being the pcom bifurcation?
-                            logger.warning('ALERT: P1 fenestration with higher node (deg = 4) being the pcom bifurcation?')
+                        if len(pca_nodes_higher) == 1: # P1 fenestration with higher node (deg >= 4) being the pcom bifurcation?
+                            logger.warning('ALERT: P1 fenestration with higher node (deg >= 4) being the pcom bifurcation?')
                             pca_nodes_high = pca_nodes_3 + pca_nodes_higher
                             pcom_bif_id, _ = find_closest_node_to_point(pca_nodes_high, pca_pcom_boundary[0], pca_label, polydata)
                             logger.debug(f'\tPcom bifurcation ID: {pcom_bif_id}')
@@ -307,8 +312,11 @@ def get_ba_pca_nodes(polydata, variant_dict):
                                 else:
                                     logger.warning(f'\tALERT: PCA 3-node not PCA end?! {pca_nodes_3[0]}')
                                     raise ValueError('\tPCA 3-node not PCA end?!')
-                            else: # origin of fenestration must be at the P1
-                                assert len(ba_pca_boundary) == 1, 'Wrong number of BA/PCA boundaries'
+                            else: # origin of fenestration must be at the P1 or there are more than than 1 fenestration
+                                if len(ba_pca_boundary) == 1:
+                                    pass
+                                else:
+                                    assert len(ba_pca_boundary) == 2, 'Wrong number of BA/PCA boundaries'
                             
                             variant_dict['fenestration'][f'{p1_name}'] = True
                             
