@@ -3,7 +3,7 @@ from math import hypot
 from splipy import curve_factory
 import splipy.utils.smooth as sm
 from sklearn.decomposition import PCA
-from matplotlib import pyplot as plt
+from matplotlib import path, pyplot as plt
 from utils.utils_graph_processing import *
 
 from logger import logger
@@ -146,7 +146,8 @@ def find_endpoint_for_fixed_length(path, polydata, length_threshold=10, stop_at_
     """
     coords_points = get_point_coords_along_path(path, polydata)
     length = 0
-    stopping_index = None
+    # Default to the last index of the path
+    stopping_index = len(path) - 1
     for i in range(len(coords_points)-1):
         length_before = length
         length += hypot(coords_points[i+1][0] - coords_points[i][0], coords_points[i+1][1] - coords_points[i][1], coords_points[i+1][2] - coords_points[i][2])
@@ -542,7 +543,7 @@ def get_distances_to_boundaries(bifurcation, boundary1, boundary2):
     Compute distances from bifurcation point to boundary points.
 
     Args:
-    bifurcation: list, list of bifurcation points (node ditionary entry)
+    bifurcation: list, list of bifurcation points (node dictionary entry)
     boundary1: list, list of boundary points (node dictionary entry)
     boundary2: list, list of boundary points (node dictionary entry)
 
@@ -610,8 +611,9 @@ def compute_bifurcation_exponent(r_p, r_c1, r_c2, x_min=0, x_max=7, x_step=0.05)
     
     return x_opt
 
-def get_normal_vectors(bif_id, pointId_parent, pointId_child1, pointId_child2, polydata, 
-                       nr_of_points_for_avg=1, start_parent=None, end_child1=None, end_child2=None):
+def get_normal_vectors(bif_id, pointId_parent, pointId_child1, pointId_child2, 
+                       parent_label, child1_label, child2_label, 
+                       polydata, nr_of_points_for_avg=3):
     """
     Get normal vectors at bifurcation point.
 
@@ -620,12 +622,13 @@ def get_normal_vectors(bif_id, pointId_parent, pointId_child1, pointId_child2, p
     pointId_parent: int, id of the parent vessel point
     pointId_child1: int, id of the first child vessel point
     pointId_child2: int, id of the second child vessel point
+    parent_label: int, label of the parent vessel
+    child1_label: int, label of the first child vessel
+    child2_label: int, label of the second child vessel
     polydata: vtkPolyData, polydata of the vessel
     nr_of_points_for_avg: int, number of points to average for normal vector computation
-                            (starting at pointIds given above)
-    start_parent: int, start point for parent vessel
-    end_child1: int, end point for first child vessel
-    end_child2: int, end point for second child vessel
+                            (starting at pointIds given above and going back towards bifurcation point.
+                            NOTE: This is the opposite from what we do for radius computation!!!)
 
     Returns:
     parent_nv: list, list of normal vectors for parent vessel
@@ -644,24 +647,40 @@ def get_normal_vectors(bif_id, pointId_parent, pointId_child1, pointId_child2, p
         parent_nv = np.zeros(3)
         child1_nv = np.zeros(3)
         child2_nv = np.zeros(3)
-        max_dist = [nr_of_points_for_avg]
-        if start_parent is not None:
-            max_dist.append(pointId_parent - start_parent + 1)
-        if end_child1 is not None:
-            max_dist.append(end_child1 - pointId_child1 + 1)
-        if end_child2 is not None:
-            max_dist.append(end_child2 - pointId_child2 + 1)
-        nr_of_points_for_avg = min(max_dist)
-        for i in range(nr_of_points_for_avg):
-            point_parent = points_cow.GetPoint(pointId_parent-i)
-            point_child1 = points_cow.GetPoint(pointId_child1+i)
-            point_child2 = points_cow.GetPoint(pointId_child2+i)
-            parent_nv += compute_normal_vector(bif_point, point_parent)
-            child1_nv += compute_normal_vector(bif_point, point_child1)
-            child2_nv += compute_normal_vector(bif_point, point_child2)
-        parent_nv /= np.linalg.norm(parent_nv)
-        child1_nv /= np.linalg.norm(child1_nv)
-        child2_nv /= np.linalg.norm(child2_nv)
+        # 1. Get paths from bif to the anchor points
+        parent_path = find_shortest_path(bif_id, pointId_parent, polydata, [parent_label])['path']
+        parent_points = [p[1] for p in parent_path]
+        
+        child1_path = find_shortest_path(bif_id, pointId_child1, polydata, [parent_label, child1_label])['path']
+        child1_points = [p[1] for p in child1_path]
+        
+        child2_path = find_shortest_path(bif_id, pointId_child2, polydata, [parent_label, child2_label])['path']
+        child2_points = [p[1] for p in child2_path]
+
+        # Initialize vectors
+        vectors = [np.zeros(3), np.zeros(3), np.zeros(3)]
+        # List of point ID paths we just found
+        point_lists = [parent_points, child1_points, child2_points]
+
+        for v_idx, pts in enumerate(point_lists):
+            count = 0
+            for i in range(nr_of_points_for_avg):
+                try:
+                    # Original logic: Get point and compute normal
+                    pt_coords = points_cow.GetPoint(pts[-(i+1)])
+                    vectors[v_idx] += compute_normal_vector(bif_point, pt_coords)
+                    count += 1
+                except IndexError:
+                    pass
+            
+            # 1. Average and 2. RE-NORMALIZE to unit length
+            if count > 0:
+                vectors[v_idx] /= count
+                norm = np.linalg.norm(vectors[v_idx])
+                if norm > 0:
+                    vectors[v_idx] /= norm # Ensure it is a unit vector
+
+        parent_nv, child1_nv, child2_nv = vectors
         
     return parent_nv, child1_nv, child2_nv
 
@@ -690,8 +709,9 @@ def compute_branching_plane_deviation(parent_nv, child1_nv, child2_nv):
     return angle
 
 
-def compute_angles(bif_id, pointId_parent, pointId_child1, pointId_child2, polydata, 
-                    nr_of_points_for_avg=1, start_parent=None, end_child1=None, end_child2=None):
+def compute_angles(bif_id, pointId_parent, pointId_child1, pointId_child2, 
+                   parent_label, child1_label, child2_label, 
+                   polydata, nr_of_points_for_avg=3):
     """
     compute bifurcation angles between parent and child vessels
 
@@ -700,12 +720,13 @@ def compute_angles(bif_id, pointId_parent, pointId_child1, pointId_child2, polyd
     pointId_parent: int, id of the parent vessel point
     pointId_child1: int, id of the first child vessel point
     pointId_child2: int, id of the second child vessel point
+    parent_label: int, label of the parent vessel
+    child1_label: int, label of the first child vessel
+    child2_label: int, label of the second child vessel
     polydata: vtkPolyData, polydata of the vessel
     nr_of_points_for_avg: int, number of points to average for normal vector computation
-                            (starting at pointIds given above)  
-    start_parent: int, start point for parent vessel
-    end_child1: int, end point for first child vessel
-    end_child2: int, end point for second child vessel
+                            (starting at pointIds given above and going back towards bifurcation point.
+                            NOTE: This is the opposite from what we do for radius computation!!!)  
 
     Returns:
     angle_parent_child1: float, angle between parent and first child vessel
@@ -713,8 +734,8 @@ def compute_angles(bif_id, pointId_parent, pointId_child1, pointId_child2, polyd
     angle_child1_child2: float, angle between first and second child vessel
     """
     parent_nv, child1_nv, child2_nv = get_normal_vectors(bif_id, pointId_parent, pointId_child1, 
-                                                         pointId_child2, polydata, nr_of_points_for_avg,
-                                                         start_parent, end_child1, end_child2)
+                                                         pointId_child2, parent_label, child1_label, child2_label, 
+                                                         polydata, nr_of_points_for_avg)
     
     angle_parent_child1 = compute_angle(parent_nv, child1_nv)
     angle_parent_child2 = compute_angle(parent_nv, child2_nv)
@@ -724,7 +745,7 @@ def compute_angles(bif_id, pointId_parent, pointId_child1, pointId_child2, polyd
 
     return angle_parent_child1, angle_parent_child2, angle_child1_child2
 
-def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radius_attribute='avg_radius',
+def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radius_attribute='ce_radius',
                   nr_of_edges_for_avg=5, start_parent=None, end_child1=None, end_child2=None):
     """
     Compute radii for ratio compututation
@@ -736,6 +757,8 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
     polydata: vtkPolyData, polydata of the vessel
     radius_attribute (str): Attribute name for radius, ('ce_radius', 'mis_radius')
     nr_of_edges_for_avg: int, number of edges to average for radius computation
+                            (starting at pointIds given above and going away from bifurcation point.
+                            NOTE: This is the opposite from what we do for normal vector computation!!!)
     start_parent: int, start point for parent vessel
     end_child1: int, end point for first child vessel
     end_child2: int, end point for second child vessel
@@ -766,7 +789,7 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
     stop_parent = False
     stop_child1 = False
     stop_child2 = False
-    dist_threshold_for_rad_computation = 2*nr_of_edges_for_avg
+    dist_threshold_for_rad_computation = nr_of_edges_for_avg + 2 # to avoid index errors
     for i in range(nr_of_edges_for_avg):
         if max_dist[1] < dist_threshold_for_rad_computation:
             radii_parent.append(np.nan)
@@ -831,7 +854,7 @@ def compute_radii(pointId_parent, pointId_child1, pointId_child2, polydata, radi
 
     return radius_parent, radius_child1, radius_child2
 
-def check_for_nan(path, end_id, polydata, buffer=5, radius_attribute='ce_radius'):
+def check_for_nan(path, end_id, polydata, buffer=3, radius_attribute='ce_radius'):
     """
     Check if the path contains NaN values from start to end_id with a buffer.
     If so, return True, otherwise return False.
@@ -857,5 +880,6 @@ def check_for_nan(path, end_id, polydata, buffer=5, radius_attribute='ce_radius'
         rad = radii.GetValue(cellId)
         if np.isnan(rad):
             return True
+    return False
         
 

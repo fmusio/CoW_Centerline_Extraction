@@ -7,7 +7,8 @@ from utils.utils_feature_extraction import *
 from logger import logger
 
 def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute='ce_radius', bif_name='BA',
-                                dist_angle=1, angle_average=1, use_fixed_dist_radius=False, dist_radius=2.5, radius_average=3):
+                                use_fixed_dist_angle=False, dist_angle=3, angle_average=3, 
+                                use_fixed_dist_radius=False, dist_radius=3, radius_average=3):
     """
     Extract bifurcation geometry: angles, radius ratios, bifurcation exponents for ICA and BA bifurcations
 
@@ -17,6 +18,7 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
     polydata: vtkPolyData, polydata of the vessel
     radius_attribute: str, attribute name for radius computation. ('ce_radius', 'voreen_radius', 'mis_radius', 'max_radius')
     bif_name: str, bifurcation name ['BA', 'R-ICA', 'L-ICA']
+    use_fixed_dist_angle: bool, if True use fixed distance for angle computation (else use dynamic distance based on segment boundary points)
     dist_angle: float, distance from bifurcation point for angle computation
     angle_average: int, number of points to average for angle computation
     use_fixed_dist_radius: bool, if True use fixed distance for radius computation
@@ -90,7 +92,8 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
         has_nan_angle = False
         # get points at dist from bifurcation for parent and children vessels
         parent_path = find_shortest_path(bif_id, parent_start[0]['id'], polydata, parent_label)['path']
-        pointId_parent_angle = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_angle)
+        if use_fixed_dist_angle:
+            pointId_parent_angle = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_angle)
         if use_fixed_dist_radius:
             pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius)
         
@@ -115,39 +118,54 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
             assert len(child1_boundary) == len(pointId_child1_rad) == len(pointId_child1_angle) == 2        
 
             child2_path = find_shortest_path(bif_id, child2_end[0]['id'], polydata, [parent_label, child2_label])['path']
-            pointId_child2_angle = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_angle)
+            if use_fixed_dist_angle:
+                pointId_child2_angle = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_angle)
             if use_fixed_dist_radius:
                 pointId_child2_rad = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_radius)
 
             assert len(child1_boundary) == len(pointId_child1_rad) == len(pointId_child1_angle) == 2
             for i in range(len(child1_boundary)):
 
-                if not use_fixed_dist_radius:
+                if not use_fixed_dist_angle:
+                    # we use the boundaries as references for the child vessels
+                    pointId_child1_angle[i] = child1_boundary[i]['id']
+                    pointId_child2_angle = child2_boundary[0]['id']
                     distances = get_distances_to_boundaries(bif, [child1_boundary[i]], child2_boundary)
-                    dist_radius = float(np.max(distances)) 
-                    pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius)
-                    id_rad = find_endpoint_for_fixed_length(child1_path[i], polydata, length_threshold=dist_radius)
-                    pointId_child1_rad[i] = id_rad
-                    pointId_child2_rad = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_radius)
+                    # We take the average distance to get a reference point for the parent vessel
+                    dist_angle_p = float(np.mean(distances))
+                    pointId_parent_angle = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_angle_p)
+
+                if not use_fixed_dist_radius:
+                    # we use the boundaries as references for the child vessels
+                    pointId_child1_rad[i] = child1_boundary[i]['id']
+                    pointId_child2_rad = child2_boundary[0]['id']
+                    distances = get_distances_to_boundaries(bif, [child1_boundary[i]], child2_boundary)
+                    # We take the average distance to get a reference point for the parent vessel
+                    dist_radius_p = float(np.mean(distances)) 
+                    pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius_p)
+                    # id_rad = find_endpoint_for_fixed_length(child1_path[i], polydata, length_threshold=dist_radius)
+                    # pointId_child1_rad[i] = id_rad
+                    # pointId_child2_rad = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_radius)
 
                 # check for nan
                 for path, id in zip([parent_path, child1_path[i], child2_path], [pointId_parent_rad, pointId_child1_rad[i], pointId_child2_rad]):
                     if check_for_nan(path, id, polydata):
                         has_nan_rad = True
-                        logger.warning(f'\tWarning: NaN found in bifurcation path for angle estimation for bifurcation {bif_name}!')
+                        logger.warning(f'\tWarning: NaN found in bifurcation path for radius estimation for bifurcation {bif_name}!')
                         break
                 if has_nan_rad:
                     for path, id in zip([parent_path, child1_path[i], child2_path], [pointId_parent_angle, pointId_child1_angle[i], pointId_child2_angle]):
                         if check_for_nan(path, id, polydata):
                             has_nan_angle = True
-                            logger.warning(f'\tWarning: NaN found in bifurcation path for radius estimation for bifurcation {bif_name}!')
+                            logger.warning(f'\tWarning: NaN found in bifurcation path for angle estimation for bifurcation {bif_name}!')
                             break
                 
                 if has_nan_angle:
                     angle_parent_child1, angle_parent_child2, angle_child1_child2 = np.nan, np.nan, np.nan
                 else:
-                    angle_parent_child1, angle_parent_child2, angle_child1_child2 = compute_angles(bif_id, pointId_parent_angle, pointId_child1_angle[i], pointId_child2_angle, polydata, nr_of_points_for_avg=angle_average,
-                                                                                                    start_parent=parent_start[0]['id'], end_child1=child1_end[0]['id'], end_child2=child2_end[0]['id'])
+                    angle_parent_child1, angle_parent_child2, angle_child1_child2 = compute_angles(bif_id, pointId_parent_angle, pointId_child1_angle[i], pointId_child2_angle, 
+                                                                                                   parent_label, child1_label, child2_label,
+                                                                                                   polydata, nr_of_points_for_avg=angle_average)
                 
                 if has_nan_rad:
                     radius_parent, radius_child1, radius_child2 = np.nan, np.nan, np.nan
@@ -163,9 +181,7 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
                 bif_geom.append({
                     'bifurcation': {
                         'midpoint': bif_id,
-                        'dist_angle': dist_angle,
                         'points_angle': [pointId_parent_angle, pointId_child1_angle[i], pointId_child2_angle],
-                        'dist_radius': np.round(dist_radius, 3),
                         'points_radius': [pointId_parent_rad, pointId_child1_rad[i], pointId_child2_rad],
                         'radius_parent': np.round(radius_parent,3),
                         'radius_child1': np.round(radius_child1,3),
@@ -192,7 +208,8 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
             assert len(child2_boundary) == 2
 
             child1_path = find_shortest_path(bif_id, child1_end[0]['id'], polydata, [parent_label, child1_label])['path']
-            pointId_child1_angle = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_angle)
+            if use_fixed_dist_angle:
+                pointId_child1_angle = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_angle)
             if use_fixed_dist_radius:
                 pointId_child1_rad = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_radius)
 
@@ -217,32 +234,46 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
 
             for i in range(len(child2_boundary)):
 
-                if not use_fixed_dist_radius:
+                if not use_fixed_dist_angle:
+                    # we use the boundaries as references for the child vessels
+                    pointId_child1_angle = child1_boundary[0]['id']
+                    pointId_child2_angle[i] = child2_boundary[i]['id']  
                     distances = get_distances_to_boundaries(bif, child1_boundary, [child2_boundary[i]])
-                    dist_radius = float(np.max(distances)) 
-                    pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius)
-                    pointId_child1_rad = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_radius)
-                    id_rad = find_endpoint_for_fixed_length(child2_path[i], polydata, length_threshold=dist_radius)
-                    pointId_child2_rad[i] = id_rad
+                    # We take the average distance to get a reference point for the parent vessel
+                    dist_angle_p = float(np.mean(distances))
+                    pointId_parent_angle = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_angle_p)
+
+                if not use_fixed_dist_radius:
+                    # we use the boundaries as references for the child vessels
+                    pointId_child1_rad = child1_boundary[0]['id']
+                    pointId_child2_rad[i] = child2_boundary[i]['id']
+                    distances = get_distances_to_boundaries(bif, child1_boundary, [child2_boundary[i]])
+                    # We take the average distance to get a reference point for the parent vessel
+                    dist_radius_p = float(np.mean(distances)) 
+                    pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius_p)
+                    # pointId_child1_rad = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_radius)
+                    # id_rad = find_endpoint_for_fixed_length(child2_path[i], polydata, length_threshold=dist_radius)
+                    # pointId_child2_rad[i] = id_rad
 
                 # check for nan
                 for path, id in zip([parent_path, child1_path, child2_path[i]], [pointId_parent_rad, pointId_child1_rad, pointId_child2_rad[i]]):
                     if check_for_nan(path, id, polydata):
                         has_nan_rad = True
-                        logger.warning(f'\tWarning: NaN found in bifurcation path for angle estimation for bifurcation {bif_name}!')
+                        logger.warning(f'\tWarning: NaN found in bifurcation path for radius estimation for bifurcation {bif_name}!')
                         break 
                 if has_nan_rad:
                     for path, id in zip([parent_path, child1_path, child2_path[i]], [pointId_parent_angle, pointId_child1_angle, pointId_child2_angle[i]]):
                         if check_for_nan(path, id, polydata):
                             has_nan_angle = True
-                            logger.warning(f'\tWarning: NaN found in bifurcation path for radius estimation for bifurcation {bif_name}!')
+                            logger.warning(f'\tWarning: NaN found in bifurcation path for angle estimation for bifurcation {bif_name}!')
                             break
                 
                 if has_nan_angle:
                     angle_parent_child1, angle_parent_child2, angle_child1_child2 = np.nan, np.nan, np.nan
                 else:
-                    angle_parent_child1, angle_parent_child2, angle_child1_child2 = compute_angles(bif_id, pointId_parent_angle, pointId_child1_angle, pointId_child2_angle[i], polydata, nr_of_points_for_avg=angle_average,
-                                                                                                    start_parent=parent_start[0]['id'], end_child1=child1_end[0]['id'], end_child2=child2_end[0]['id'])
+                    angle_parent_child1, angle_parent_child2, angle_child1_child2 = compute_angles(bif_id, pointId_parent_angle, pointId_child1_angle, pointId_child2_angle[i], 
+                                                                                                   parent_label, child1_label, child2_label, 
+                                                                                                   polydata, nr_of_points_for_avg=angle_average)
                 
                 if has_nan_rad:
                     radius_parent, radius_child1, radius_child2 = np.nan, np.nan, np.nan
@@ -258,9 +289,7 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
                 bif_geom.append({
                     'bifurcation': {
                         'midpoint': bif_id,
-                        'dist_angle': dist_angle,
                         'points_angle': [pointId_parent_angle, pointId_child1_angle, pointId_child2_angle[i]],
-                        'dist_radius': np.round(dist_radius, 3),
                         'points_radius': [pointId_parent_rad, pointId_child1_rad, pointId_child2_rad[i]],
                         'radius_parent': np.round(radius_parent,3),
                         'radius_child1': np.round(radius_child1,3),
@@ -283,47 +312,63 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
         
         else:
             child1_path = find_shortest_path(bif_id, child1_end[0]['id'], polydata, [parent_label, child1_label])['path']
-            pointId_child1_angle = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_angle)
+            if use_fixed_dist_angle:
+                pointId_child1_angle = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_angle)
             if use_fixed_dist_radius:
                 pointId_child1_rad = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_radius)
 
             child2_path = find_shortest_path(bif_id, child2_end[0]['id'], polydata, [parent_label, child2_label])['path']
-            pointId_child2_angle = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_angle)
+            if use_fixed_dist_angle:
+                pointId_child2_angle = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_angle)
             if use_fixed_dist_radius:
                 pointId_child2_rad = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_radius)
 
-            if not use_fixed_dist_radius:
+            if not use_fixed_dist_angle:
+                # We use the boundaries as references for the child vessels
+                pointId_child1_angle = child1_boundary[0]['id']
+                pointId_child2_angle = child2_boundary[0]['id']
                 distances = get_distances_to_boundaries(bif, child1_boundary, child2_boundary)
-                dist_radius = float(np.max(distances))
-                pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius)
-                pointId_child1_rad = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_radius)
-                pointId_child2_rad = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_radius)
+                # We take the average distance to get a reference point for the parent vessel
+                dist_angle_p = float(np.mean(distances))
+                pointId_parent_angle = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_angle_p)
+
+            if not use_fixed_dist_radius:
+                # We use the boundaries as references for the child vessels
+                pointId_child1_rad = child1_boundary[0]['id']
+                pointId_child2_rad = child2_boundary[0]['id']
+                distances = get_distances_to_boundaries(bif, child1_boundary, child2_boundary)
+                # We take the average distance to get a reference point for the parent vessel
+                dist_radius_p = float(np.mean(distances))
+                pointId_parent_rad = find_endpoint_for_fixed_length(parent_path, polydata, length_threshold=dist_radius_p)
+                # pointId_child1_rad = find_endpoint_for_fixed_length(child1_path, polydata, length_threshold=dist_radius_p)
+                # pointId_child2_rad = find_endpoint_for_fixed_length(child2_path, polydata, length_threshold=dist_radius_p)
             
             for path, id in zip([parent_path, child1_path, child2_path], [pointId_parent_rad, pointId_child1_rad, pointId_child2_rad]):
                 if check_for_nan(path, id, polydata):
                     has_nan_rad = True
-                    logger.warning(f'\tWarning: NaN found in bifurcation path for angle estimation for bifurcation {bif_name}!')
+                    logger.warning(f'\tWarning: NaN found in bifurcation path for radius estimation for bifurcation {bif_name}!')
                     break 
             if has_nan_rad:
                 for path, id in zip([parent_path, child1_path, child2_path], [pointId_parent_angle, pointId_child1_angle, pointId_child2_angle]):
                     if check_for_nan(path, id, polydata):
                         has_nan_angle = True
-                        logger.warning(f'\tWarning: NaN found in bifurcation path for radius estimation for bifurcation {bif_name}!')
+                        logger.warning(f'\tWarning: NaN found in bifurcation path for angle estimation for bifurcation {bif_name}!')
                         break
 
             if has_nan_angle:
                 angle_parent_child1, angle_parent_child2, angle_child1_child2 = np.nan, np.nan, np.nan
             else:            
-                angle_parent_child1, angle_parent_child2, angle_child1_child2 = compute_angles(bif_id, pointId_parent_angle, pointId_child1_angle, pointId_child2_angle, polydata, nr_of_points_for_avg=angle_average,
-                                                                                                start_parent=parent_start[0]['id'], end_child1=child1_end[0]['id'], end_child2=child2_end[0]['id'])
+                angle_parent_child1, angle_parent_child2, angle_child1_child2 = compute_angles(bif_id, pointId_parent_angle, pointId_child1_angle, pointId_child2_angle, 
+                                                                                               parent_label, child1_label, child2_label,
+                                                                                               polydata, nr_of_points_for_avg=angle_average)
+                                                                                               
             
-
             if has_nan_rad:
                 radius_parent, radius_child1, radius_child2 = np.nan, np.nan, np.nan
             else:
                 radius_parent, radius_child1, radius_child2 = compute_radii(pointId_parent_rad, pointId_child1_rad, pointId_child2_rad, polydata, radius_attribute=radius_attribute,
-                                                                            nr_of_edges_for_avg=radius_average, start_parent=parent_start[0]['id'], end_child1=child1_end[0]['id'], end_child2=child2_end[0]['id'])
-                        
+                                                                            nr_of_edges_for_avg=radius_average, start_parent=parent_start[0]['id'], end_child1=child1_end[0]['id'], end_child2=child2_end[0]['id'])      
+            
             # compute ratios
             ratio_finet, ratio_pc1, ratio_pc2, ratio_c1c2, ratio_area_sum = compute_ratios(radius_parent, radius_child1, radius_child2)
             bif_exp = compute_bifurcation_exponent(radius_parent, radius_child1, radius_child2)
@@ -331,9 +376,7 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
             bif_geom.append({
                 'bifurcation': {
                     'midpoint': bif_id,
-                    'dist_angle': dist_angle,
                     'points_angle': [pointId_parent_angle, pointId_child1_angle, pointId_child2_angle],
-                    'dist_radius': np.round(dist_radius, 3),
                     'points_radius': [pointId_parent_rad, pointId_child1_rad, pointId_child2_rad],
                     'radius_parent': np.round(radius_parent,3),
                     'radius_child1': np.round(radius_child1,3),
@@ -356,7 +399,7 @@ def extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attri
 
     return bif_geom
     
-def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_location='R-ICA', dist=1, angle_average=1):
+def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_location='R-ICA', dist=1.5, angle_average=3):
     """
     Extract Acom/Pcom bifurcation angles
 
@@ -489,8 +532,9 @@ def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_locat
                     if has_nan_angle:
                         angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = np.nan, np.nan, np.nan
                     else:
-                        angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = compute_angles(bif_id, pointId_parent_start[i], pointId_parent_end, pointId_com, 
-                                                                                                            polydata, nr_of_points_for_avg=angle_average)
+                        angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = compute_angles(bif_id, pointId_parent_start[i], pointId_parent_end, pointId_com,
+                                                                                                              parent_label, parent_label, com_label, 
+                                                                                                              polydata, nr_of_points_for_avg=angle_average)
                     bif_geom.append({
                         'bifurcation': {
                             'midpoint': bif_id,
@@ -536,7 +580,8 @@ def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_locat
                         angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = np.nan, np.nan, np.nan
                     else:
                         angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = compute_angles(bif_id, pointId_parent_start, pointId_parent_end, pointId_com, 
-                                                                                                            polydata, nr_of_points_for_avg=angle_average)
+                                                                                                              parent_label, parent_label, com_label, 
+                                                                                                              polydata, nr_of_points_for_avg=angle_average)
 
                     bif_geom.append({
                         'bifurcation': {
@@ -571,8 +616,9 @@ def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_locat
                             pointId_com.append(id_com)
                     
                     for i in range(len(pointId_com)):
-                        angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = compute_angles(bif_id, pointId_parent_start, pointId_parent_end, pointId_com[i], 
-                                                                                                            polydata, nr_of_points_for_avg=angle_average)
+                        angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = compute_angles(bif_id, pointId_parent_start, pointId_parent_end, pointId_com[i],
+                                                                                                              parent_label, parent_label, com_label, 
+                                                                                                              polydata, nr_of_points_for_avg=angle_average)
 
                         bif_geom.append({
                             'bifurcation': {
@@ -618,7 +664,8 @@ def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_locat
                 pointId_com = find_endpoint_for_fixed_length(com_path, polydata, length_threshold=dist)
 
                 angle_parent_start_end, angle_parent_start_com, angle_parent_end_com = compute_angles(bif_id, pointId_parent_start, pointId_parent_end, pointId_com, 
-                                                                                                    polydata, nr_of_points_for_avg=angle_average)
+                                                                                                      parent_label, parent_label, com_label,
+                                                                                                      polydata, nr_of_points_for_avg=angle_average)
 
                 bif_geom.append({
                     'bifurcation': {
@@ -636,8 +683,9 @@ def extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, bif_locat
     return bif_geom
 
 def extract_bifurcation_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: str, feature_dir: str, 
-                                 radius_attribute: str = 'ce_radius', dist_angle: float = 1, angle_average: float = 1, 
-                                 radius_average: float = 3, use_fixed_dist_radius: bool = False, dist_radius: float = 2.5):
+                                 radius_attribute: str = 'ce_radius', use_fixed_dist_angle=False, dist_angle: float = 1.5, 
+                                 angle_average: float = 3, radius_average: float = 3, use_fixed_dist_radius: bool = False, 
+                                 dist_radius: float = 2.5):
     """
     Extract bifurcation geometry: 
         - angles, radius ratios, bifurcation exponents for ICA and BA bifurcations
@@ -648,7 +696,8 @@ def extract_bifurcation_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: 
     variant_dir: str, path to directory containing variant json files
     node_dir: str, path to directory containing node json files
     feature_dir: str, path to directory to save feature json files
-    radius_attribute: str, attribute name for radius computation. ('ce_radius', 'avg_radius', 'min_radius', 'max_radius')
+    radius_attribute: str, attribute name for radius computation. ('ce_radius', 'mis_radius')
+    use_fixed_dist_angle: bool, whether to use fixed distance for angle computation or dynamic distance (based on segment boundary points)
     dist_angle: float, distance [mm] to sample points around bifurcation for angle computation
     angle_average: float, number of points to average for angle computation
     radius_average: float, number of points to average for radius computation
@@ -690,12 +739,11 @@ def extract_bifurcation_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: 
 
     logger.info(f'Extracting bifurcation geometry (angles, radius ratios, bifurcation exponent) for major bifurcations...')
     logger.info('...BA bifurcation')
-    ba_bif = extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute, 'BA', dist_angle, angle_average, use_fixed_dist_radius, dist_radius, radius_average)
+    ba_bif = extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute, 'BA', use_fixed_dist_angle, dist_angle, angle_average, use_fixed_dist_radius, dist_radius, radius_average)
     logger.info(f'...R-ICA bifurcation')
-    rica_bif = extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute, 'R-ICA', dist_angle, angle_average, use_fixed_dist_radius, dist_radius, radius_average)
+    rica_bif = extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute, 'R-ICA', use_fixed_dist_angle, dist_angle, angle_average, use_fixed_dist_radius, dist_radius, radius_average)
     logger.info(f'...L-ICA bifurcation')
-    lica_bif = extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute, 'L-ICA', dist_angle, angle_average, use_fixed_dist_radius, dist_radius, radius_average)
-
+    lica_bif = extract_ba_ica_bif_geometry(nodes_dict, variant_dict, polydata, radius_attribute, 'L-ICA', use_fixed_dist_angle, dist_angle, angle_average, use_fixed_dist_radius, dist_radius, radius_average)
     logger.info(f'Extracting bifurcation geometry (angles) for minor bifurcations...')
     logger.info(f'...Pcom/PCA bifurcations')
     rpca_pcom_bif = extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, 'R-PCA', dist_angle, angle_average)
@@ -706,7 +754,6 @@ def extract_bifurcation_geometry(cnt_vtp_file: str, variant_dir: str, node_dir: 
     logger.info(f'...Acom bifurcations')
     raca_acom_bif = extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, 'R-ACA', dist_angle, angle_average)
     laca_acom_bif = extract_acom_pcom_bif_geometry(nodes_dict, variant_dict, polydata, 'L-ACA', dist_angle, angle_average)
-
     # Combine all bifurcation features into a single dictionary for logging
     all_bif_features = {
         'BA bifurcation': ba_bif,

@@ -31,7 +31,7 @@ from configs import postprocess_graph, compute_radius_along_graph, extract_featu
 from configs import do_mask_corrections, min_overall_segment_size, threshold_for_component_removal, max_path_length_mask
 from configs import max_path_length, remove_floating_segments, n_jobs
 from configs import radius_attribute, median_p1, median_a1, median_c7, margin_from_cow
-from configs import dist_angle, nr_pts_angle_average, nr_edges_rad_avg, fixed_dist_radius
+from configs import  fixed_dist_angle, dist_angle, nr_pts_angle_average, nr_edges_rad_avg, fixed_dist_radius
 from configs import fetal_percentile, fetal_factor
 
 
@@ -284,6 +284,7 @@ def run_pipeline_for_single_case(cow_seg_filename):
                                          node_dir,
                                          feature_dir,
                                          radius_attribute,
+                                         use_fixed_dist_angle=fixed_dist_angle,
                                          dist_angle=dist_angle,
                                          angle_average=nr_pts_angle_average,
                                          radius_average=nr_edges_rad_avg,
