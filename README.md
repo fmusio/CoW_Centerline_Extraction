@@ -5,7 +5,7 @@ The centerline data used to develop this algorithm is publicly available on Zeno
 [https://zenodo.org/records/17358162](https://zenodo.org/records/17358162).
 
 If you make use of our algorithm or data in your work, please cite our paper:
-> [Musio et al., “Circle of Willis Centerline Graphs: A Dataset and Baseline Algorithm” (2025)](https://arxiv.org/abs/2510.13720).
+> [Musio et al., “Circle of Willis Centerline Graphs: A Dataset and Baseline Algorithm” (2026)](https://doi.org/10.1016/j.neuri.2026.100265).
 
 <p align="center">
   <img src="https://github.com/fmusio/CoW_Centerline_Extraction/blob/main/figure_example_cnt.png" width="600" />
