@@ -938,6 +938,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
     if acom_label in labels_array:
         nodes_dict[str(acom_label)] = {}
 
+
     logger.info('4) Extracting ACA nodes...')
 
     for aca_label, ica_label, a1_name, aca_name in zip([raca_label, laca_label], [rica_label, lica_label], ['R-A1', 'L-A1'], ['R-ACA', 'L-ACA']):
@@ -959,8 +960,11 @@ def get_aca_acom_nodes(polydata, variant_dict):
         aca_acom_nodes_3 = get_nodes_of_degree_n(3, [aca_label, acom_label], polydata)
         aca_acom_nodes_4 = get_nodes_of_degree_n(4, [aca_label, acom_label], polydata)
 
-        aca_acom_nodes_high = aca_acom_nodes_3 + aca_acom_nodes_4
-        if 15 in labels_array:
+        aca_acom_nodes_high = aca_acom_nodes_3 + aca_acom_nodes_4        
+
+        # Get 3rd-A2
+        if a2_label in labels_array:
+            assert variant_dict['anterior']['3rd-A2']
             acom_a2_boundary = find_boundary_points(acom_label, a2_label, polydata)
             a2_start = find_acom_bif_for_3rd_a2(acom_a2_boundary[0], polydata)
             if a2_start in aca_acom_nodes_3:
@@ -968,6 +972,26 @@ def get_aca_acom_nodes(polydata, variant_dict):
                 deg = get_point_degree(a2_start, get_edge_list(polydata)[0])
                 assert deg == 3
                 aca_acom_nodes_high.remove(a2_start)
+            if aca_label == 12:
+                logger.debug(f'\t3rd-A2 present with boundary point {acom_a2_boundary}')
+                a2_nodes_1 = get_nodes_of_degree_n(1, a2_label, polydata)
+                a2_nodes_3 = get_nodes_of_degree_n(3, a2_label, polydata)
+                assert len(a2_nodes_3) == 0, 'Wrong number of A2 3-nodes!'
+                assert len(a2_nodes_1) == 2, 'Wrong number of A2 1-nodes!'
+                if len(acom_a2_boundary) == 1:   
+                    boundary_id = acom_a2_boundary[0]                 
+                else:
+                    logger.warning(f'\tALERT: Wrong number of 3rd-A2/Acom boundary points: {acom_a2_boundary}.')
+                    raise ValueError('3rd-A2 not touching anything?!')
+                acom_boundary_a2 = get_node_dict_entry(boundary_id, 2, acom_label, polydata)
+                a2_boundary_acom = get_node_dict_entry(boundary_id, 2, a2_label, polydata)
+                a2_nodes_1.remove(boundary_id)
+                assert len(a2_nodes_1) == 1, 'Wrong number of remaining A2 1-nodes!'
+                a2_end = get_node_dict_entry(a2_nodes_1[0], 1, a2_label, polydata)
+                logger.debug(f'\t3rd-A2 end: {a2_end}')
+                a2_bif_id = find_acom_bif_for_3rd_a2(acom_a2_boundary[0], polydata)
+                a2_bifurcation = get_node_dict_entry(a2_bif_id, 3, acom_label, polydata)
+                logger.debug(f'\t3rd-A2 bifurcation: {a2_bifurcation}')
         
         # A1 present
         if variant_dict['anterior'][a1_name]:
@@ -1059,31 +1083,6 @@ def get_aca_acom_nodes(polydata, variant_dict):
                 if loop: 
                     logger.warning(f'\tALERT: A1 fenestration found!')
                     variant_dict['fenestration'][f'{a1_name}'] = True
-                
-                # Get 3rd-A2
-                if a2_label in labels_array and aca_label == 12:
-                    assert variant_dict['anterior']['3rd-A2']
-                    acom_a2_boundary = find_boundary_points(acom_label, a2_label, polydata)
-                    logger.debug(f'\t3rd-A2 present with boundary point {acom_a2_boundary}')
-                    a2_nodes_1 = get_nodes_of_degree_n(1, a2_label, polydata)
-                    a2_nodes_3 = get_nodes_of_degree_n(3, a2_label, polydata)
-                    assert len(a2_nodes_3) == 0, 'Wrong number of A2 3-nodes!'
-                    assert len(a2_nodes_1) == 2, 'Wrong number of A2 1-nodes!'
-                    if len(acom_a2_boundary) == 1:   
-                        boundary_id = acom_a2_boundary[0]                 
-                    else:
-                        logger.warning(f'\tALERT: Wrong number of 3rd-A2/Acom boundary points: {acom_a2_boundary}.')
-                        raise ValueError('3rd-A2 not touching anything?!')
-
-                    acom_boundary_a2 = get_node_dict_entry(boundary_id, 2, acom_label, polydata)
-                    a2_boundary_acom = get_node_dict_entry(boundary_id, 2, a2_label, polydata)
-                    a2_nodes_1.remove(boundary_id)
-                    assert len(a2_nodes_1) == 1, 'Wrong number of remaining A2 1-nodes!'
-                    a2_end = get_node_dict_entry(a2_nodes_1[0], 1, a2_label, polydata)
-                    logger.debug(f'\t3rd-A2 end: {a2_end}')
-                    a2_bif_id = find_acom_bif_for_3rd_a2(acom_a2_boundary[0], polydata)
-                    a2_bifurcation = get_node_dict_entry(a2_bif_id, 3, acom_label, polydata)
-                    logger.debug(f'\t3rd-A2 bifurcation: {a2_bifurcation}')
             
             else: # No Acom but A1
                 logger.debug('\tNo Acom present.')
@@ -1163,7 +1162,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
                         raise ValueError('Too many ACA 1-nodes found without ICA?!')
                 else:
                     raise ValueError('ACA without A1 but with ICA?! Not implemented yet!')
-
+        
         # ACA end
         if len(aca_end) == 0:
             if len(aca_boundary_ica) > 0:
