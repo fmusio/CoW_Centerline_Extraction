@@ -1106,7 +1106,8 @@ def get_aca_acom_nodes(polydata, variant_dict):
                     logger.debug('\tACA/Acom boundary not in ACA 1-nodes. Might be a 3-node then.')
                 # Either ACA end is branching point or broken but present A1
                 if len(aca_nodes_1) == 2:
-                    if len(aca_acom_nodes_3) == 1:
+                    # NOTE: if 3rd-A2 is present, we either have a 3-node more, or a 4-node instead...
+                    if len(aca_acom_nodes_3) == 1 or (variant_dict['anterior']['3rd-A2'] == True and (len(aca_acom_nodes_3) == 2 or len(aca_acom_nodes_4) == 1)):
                         acom_bif_id, min_dist = find_closest_node_to_point(aca_acom_nodes_3, aca_acom_boundary[0], aca_label, polydata)
                         if min_dist < 9: # NOTE: This is a hard-coded value! Might need to be adjusted! Set value small enough!
                             path = find_shortest_path(aca_nodes_1[0], aca_nodes_1[1], polydata, [aca_label])['path']
