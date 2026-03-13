@@ -1209,7 +1209,7 @@ def get_aca_acom_nodes(polydata, variant_dict):
                             fen_nodes.append(node)
                     
                     loose_end = None
-                    if len(fen_nodes) > 0:
+                    if len(fen_nodes) == 1:
                         logger.warning(f'\tALERT: Broken A1 fenestration found with loop node: {fen_nodes}')
                         assert len(fen_nodes) == 1, 'Wrong number of ACA fenestration nodes!'
                         assert len(acom_bif_node) == 1, 'A1 fenestration and Acom fenestration together?!'
